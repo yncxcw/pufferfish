@@ -145,8 +145,8 @@ public class DockerContainerExecutor extends ContainerExecutor {
                              Path nmPrivateContainerScriptPath, Path nmPrivateTokensPath,
                              String userName, String appId, Path containerWorkDir,
                              List<String> localDirs, List<String> logDirs) throws IOException {
-    String containerImageName = container.getLaunchContext().getEnvironment()
-        .get(YarnConfiguration.NM_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME);
+    String containerImageName = getConf().get(YarnConfiguration.NM_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME,
+    		           YarnConfiguration.NM_DEFAULT_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME);
     if (LOG.isDebugEnabled()) {
       LOG.debug("containerImageName from launchContext: " + containerImageName);
     }
@@ -191,6 +191,9 @@ public class DockerContainerExecutor extends ContainerExecutor {
     Path tokenDst =
         new Path(containerWorkDir, ContainerLaunch.FINAL_CONTAINER_TOKENS_FILE);
     lfs.util().copy(nmPrivateTokensPath, tokenDst);
+    
+    //configure the memory
+    String memory = Integer.toString(container.getResource().getMemory());
 
 
 
@@ -201,6 +204,10 @@ public class DockerContainerExecutor extends ContainerExecutor {
     String commandStr = commands.append(dockerExecutor)
         .append(" ")
         .append("run")
+        .append(" ")
+        .append("--memory="+memory+"m")
+        .append(" ")
+        .append("--memory-swap -1")
         .append(" ")
         .append("--rm --net=host")
         .append(" ")
