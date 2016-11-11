@@ -18,6 +18,9 @@
 
 package org.apache.hadoop.yarn.server.nodemanager.containermanager.container;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
@@ -38,6 +41,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.util.Shell.ShellCommandExecutor;
 import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
@@ -51,6 +55,7 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.security.ContainerTokenIdentifier;
 import org.apache.hadoop.yarn.server.api.protocolrecords.NMContainerStatus;
 import org.apache.hadoop.yarn.server.nodemanager.NMAuditLogger;
+import org.apache.hadoop.yarn.server.nodemanager.ContainerExecutor.ExitCode;
 import org.apache.hadoop.yarn.server.nodemanager.NMAuditLogger.AuditConstants;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.AuxServicesEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.AuxServicesEventType;
@@ -99,6 +104,8 @@ public class ContainerImpl implements Container {
   private boolean wasLaunched;
   private long containerLaunchStartTime;
   private static Clock clock = new SystemClock();
+  
+  public ContainerMonitor containerMonitor = new ContainerMonitor();
 
   /** The NM-wide configuration - not specific to this container */
   private final Configuration daemonConf;
@@ -547,6 +554,230 @@ public class ContainerImpl implements Container {
     }
 
   }
+  
+  
+  private class ContainerMonitor extends Thread{
+		
+		private String memoryPath;
+
+		private String name;
+		
+		private String dockerId;
+		
+		private int currentConfiguredMemory;
+		
+		private int currentUsedMemory;
+		
+		private int currentUsedSwap;
+		
+		private boolean isSwapping;
+		
+		private boolean isRunning;
+		
+		private boolean isUpdated;
+		
+		
+		public ContainerMonitor(){
+			//YARN container id
+			this.name = containerId.toString();
+			//in terms of M
+			this.currentConfiguredMemory = resource.getMemory();
+			//get its docker id
+			String[] containerIdCommands={"docker","inspect","--format={{.Id}}",name};
+		    dockerId  = runDockerUpdateCommand(containerIdCommands);
+		    //initial the memory path
+		    memoryPath= "/sys/fs/cgroup/memory"+dockerId+"/memory/";  
+		    
+		}
+		
+		@Override
+		public void run(){
+			isRunning = true;
+			while(stateMachine.getCurrentState() == ContainerState.RUNNING){
+				//get current used memory
+				getCurrentUsedMemory();
+				//get current used swap
+				getCurrentUsedSwap();
+				//if used memory+swap > configured and swap > threadshhod
+				if(currentUsedMemory+currentUsedSwap>currentConfiguredMemory
+					&& currentUsedSwap > 500){
+				   isSwapping  = true;
+				   //freeze the cpu usage
+				   DockerCommandCpuQuota(1000);
+				}else{
+				   isSwapping = false;
+				   //resume the cpu usage
+				   DockerCommandCpuQuota(-1);
+				}
+				
+				//update configured memory
+				if(isUpdated){
+				   updateConfiguredMemory();  	
+				  isUpdated=false;	
+				}
+				
+				//if we come here it means we need to sleep for 5s
+				 try {
+					    Thread.sleep(5000);
+					} catch (InterruptedException e) {
+					    e.printStackTrace();
+				 }
+			}
+			isRunning = false;
+		}
+		
+		public void setConfiguredMemory(int configuredMemory){
+			currentConfiguredMemory = configuredMemory;
+			isUpdated=true;
+		}
+		
+		private void updateConfiguredMemory(){
+			
+	        int limitedMemory = getCurrentLimitedMemory();
+	        
+	        LOG.info("container: "+containerId.toString()+" old: "+limitedMemory
+	        		 +"new: "+currentConfiguredMemory);
+	        
+	        if(currentConfiguredMemory > limitedMemory){
+	        	DockerCommandMemory(currentConfiguredMemory);
+	        }else{
+	        	while(currentConfiguredMemory < limitedMemory){
+	        		limitedMemory = limitedMemory - 1024;
+	        		DockerCommandMemory(limitedMemory);
+	        	}
+	        	DockerCommandMemory(currentConfiguredMemory);
+	        }
+	        
+		}
+		
+	    private void DockerCommandCpuQuota(Integer quota){
+			  List<String> commandPrefix = new ArrayList<String>();
+			  commandPrefix.add("docker");
+			  commandPrefix.add("update");
+			  List<String> commandQuota = new ArrayList<String>();
+			  commandQuota.addAll(commandPrefix);
+			  commandQuota.add("--cpu-quota");
+			  commandQuota.add(quota.toString());
+			  commandQuota.add(containerId.toString());
+			  String[] commandArrayQuota = commandQuota.toArray(new String[commandQuota.size()]);
+			  this.runDockerUpdateCommand(commandArrayQuota);
+			  
+		  }
+		 private void DockerCommandMemory(Integer memory){
+			  List<String> commandPrefix = new ArrayList<String>();
+			  commandPrefix.add("docker");
+			  commandPrefix.add("update");
+			  List<String> commandMemory = new ArrayList<String>();
+			  commandMemory.addAll(commandPrefix);
+			  commandMemory.add("--memory");
+			  commandMemory.add(memory.toString()+"m");
+			  commandMemory.add(containerId.toString());
+			  String[] commandArrayMemory = commandMemory.toArray(new String[commandMemory.size()]);
+			  runDockerUpdateCommand(commandArrayMemory);
+			  
+			  
+		   }
+		//pulled by nodemanager
+		public boolean getIsSwapping(){
+			if (!isRunning)
+				return false;
+			return isSwapping;
+		}
+		
+		//pull by monitor, in termes of M
+		public int getCurrentLimitedMemory(){
+			if(!isRunning)
+				return 0;
+			String path=memoryPath+"memory.limit_in_bytes";
+			int limitedMemory = Integer.parseInt(readFileLines(path).get(0))/(1024*1024);;
+			return limitedMemory;
+		}
+		
+		//pulled by nodemanager, in termes of M
+		public int getCurrentUsedMemory(){
+			if(!isRunning)
+				return 0;
+			String path=memoryPath+"memory.usage_in_bytes";
+			currentUsedMemory = Integer.parseInt(readFileLines(path).get(0))/(1024*1024);
+			return currentUsedMemory;
+		}
+		
+		//pulled by nodemanager, in termes of M
+		public int getCurrentUsedSwap(){
+			if(!isRunning)
+				return 0;
+		    String path=memoryPath+"memory.stat";
+		    currentUsedSwap=Integer.parseInt(readFileLines(path).get(0))/(1024*1024);
+			return currentUsedSwap;
+		}
+		
+		
+		
+		private String runDockerUpdateCommand(String[] command){
+			 String commandString=new String();
+			 for(String c : command){
+				 commandString += c;
+				 commandString += " ";
+			 }
+			 LOG.info("run docker commands:"+commandString);
+			 ShellCommandExecutor shExec = null; 
+			 int count = 10;
+			 while(count > 0){
+			 //we try 10 times if fails due to device busy 
+		     try { 
+				  shExec = new ShellCommandExecutor(command);
+				  shExec.execute();
+				 
+			    } catch (IOException e) {
+			      int exitCode = shExec.getExitCode();
+			      if (exitCode != ExitCode.FORCE_KILLED.getExitCode()
+			          && exitCode != ExitCode.TERMINATED.getExitCode()) {
+			        LOG.warn("Exception from Docker update with container ID: "
+			            + name + " and exit code: " + exitCode, e); 
+			      }
+			      count--;
+			      continue;
+			      
+			    } finally {
+			      if (shExec != null) {
+			        shExec.close();
+			      }
+			    }
+		        LOG.info("command execution successfully");
+		        break; 
+			 }
+			
+			 return shExec.getOutput();
+		   }
+		
+		private List<String> readFileLines(String path){
+			ArrayList<String> results= new ArrayList<String>();
+			File file = new File(path);
+		    BufferedReader reader = null;
+		    try {
+		        reader = new BufferedReader(new FileReader(file));
+		        String tempString = null;
+		        int line = 1;
+		        while ((tempString = reader.readLine()) != null) {
+		               results.add(tempString);
+		               line++;
+		            }
+		            reader.close();
+		        } catch (IOException e) {
+		            e.printStackTrace();
+		        } finally {
+		            if (reader != null) {
+		                try {
+		                    reader.close();
+		                } catch (IOException e1) {
+		                }
+		            }
+		        }
+			
+			return results;
+		}
+	}
+  
 
   /**
    * State transition when a NEW container receives the INIT_CONTAINER
@@ -761,6 +992,8 @@ public class ContainerImpl implements Container {
       container.wasLaunched  = true;
       long duration = clock.getTime() - container.containerLaunchStartTime;
       container.metrics.addContainerLaunchDuration(duration);
+      //we start docker container monitor thread here
+      container.containerMonitor.start();
 
       if (container.recoveredAsKilled) {
         LOG.info("Killing " + container.containerId
