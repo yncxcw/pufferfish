@@ -391,7 +391,10 @@ public class ContainersMonitorImpl extends AbstractService implements
           }
           containersToBeRemoved.clear();
         }
-
+        
+        //monitor the memory usage for container ballooning
+        context.getNodeMemoryManager().MemoryBalloon();
+        
         // Now do the monitoring for the trackingContainers
         // Check memory usage and kill any overflowing containers
         long vmemStillInUsage = 0;

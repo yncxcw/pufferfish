@@ -54,6 +54,7 @@ public class NodeHeartbeatResponsePBImpl extends
   private List<ContainerId> containersToCleanup = null;
   private List<ContainerId> containersToBeRemovedFromNM = null;
   private List<ApplicationId> applicationsToCleanup = null;
+  private List<ApplicationId> flexibleApplications  = null;
   private Map<ApplicationId, ByteBuffer> systemCredentials = null;
 
   private MasterKey containerTokenMasterKey = null;
@@ -95,6 +96,9 @@ public class NodeHeartbeatResponsePBImpl extends
     }
     if (this.systemCredentials != null) {
       addSystemCredentialsToProto();
+    }
+    if (this.flexibleApplications != null){
+      flexibleApplicationsToProto();	
     }
   }
 
@@ -483,5 +487,72 @@ public class NodeHeartbeatResponsePBImpl extends
   private MasterKeyProto convertToProtoFormat(MasterKey t) {
     return ((MasterKeyPBImpl) t).getProto();
   }
+
+@Override
+public List<ApplicationId> getFlexibleApplications() {
+	initFlexibleApplications();
+	return this.flexibleApplications;
+	
+}
+
+@Override
+public void setFlexibleApplications(List<ApplicationId> applications) {
+	 if (applications == null)
+	      return;
+	 initFlexibleApplications();
+	 this.flexibleApplications.addAll(applications);
+	
+}
+
+
+private void initFlexibleApplications(){
+  if (this.flexibleApplications != null) {
+    return;
+  }
+  NodeHeartbeatResponseProtoOrBuilder p = viaProto ? proto : builder;
+  List<ApplicationIdProto> list = p.getFlexibleApplicationsList();
+  this.flexibleApplications = new ArrayList<ApplicationId>();
+
+  for (ApplicationIdProto c : list) {
+    this.flexibleApplications.add(convertFromProtoFormat(c));
+  }
+}
+
+
+private void flexibleApplicationsToProto() {
+    maybeInitBuilder();
+    builder.clearFlexibleApplications();
+    if ( flexibleApplications == null)
+      return;
+    Iterable<ApplicationIdProto> iterable = new Iterable<ApplicationIdProto>() {
+
+      @Override
+      public Iterator<ApplicationIdProto> iterator() {
+        return new Iterator<ApplicationIdProto>() {
+
+          Iterator<ApplicationId> iter = flexibleApplications.iterator();
+
+          @Override
+          public boolean hasNext() {
+            return iter.hasNext();
+          }
+
+          @Override
+          public ApplicationIdProto next() {
+            return convertToProtoFormat(iter.next());
+          }
+
+          @Override
+          public void remove() {
+            throw new UnsupportedOperationException();
+
+          }
+        };
+
+      }
+    };
+    builder.addAllFlexibleApplications(iterable);
+  }
+
 }
 

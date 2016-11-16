@@ -30,6 +30,7 @@ import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.security.ContainerTokenIdentifier;
 import org.apache.hadoop.yarn.server.api.protocolrecords.NMContainerStatus;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerImpl.ContainerMonitor;
 
 public interface Container extends EventHandler<ContainerEvent> {
 
@@ -54,5 +55,9 @@ public interface Container extends EventHandler<ContainerEvent> {
   NMContainerStatus getNMContainerStatus();
 
   String toString();
-
+  
+  ContainerMonitor getContainerMonitor();
+  
+  long getLaunchStartTime();
+  
 }

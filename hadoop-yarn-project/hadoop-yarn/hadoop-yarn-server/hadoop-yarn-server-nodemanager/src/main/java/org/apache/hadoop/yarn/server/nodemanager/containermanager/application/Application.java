@@ -32,6 +32,10 @@ public interface Application extends EventHandler<ApplicationEvent> {
   Map<ContainerId, Container> getContainers();
 
   ApplicationId getAppId();
+  
+  boolean getIsFlexible();
+  
+  void setIsFlexible(boolean flexible);
 
   ApplicationState getApplicationState();
 

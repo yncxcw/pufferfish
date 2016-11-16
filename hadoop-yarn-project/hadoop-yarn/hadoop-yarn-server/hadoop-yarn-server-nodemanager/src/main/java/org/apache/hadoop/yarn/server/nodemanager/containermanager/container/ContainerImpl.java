@@ -102,7 +102,7 @@ public class ContainerImpl implements Container {
   private int exitCode = ContainerExitStatus.INVALID;
   private final StringBuilder diagnostics;
   private boolean wasLaunched;
-  private long containerLaunchStartTime;
+  private long containerLaunchStartTime=-1;
   private static Clock clock = new SystemClock();
   
   public ContainerMonitor containerMonitor = new ContainerMonitor();
@@ -374,6 +374,16 @@ public class ContainerImpl implements Container {
       return org.apache.hadoop.yarn.api.records.ContainerState.COMPLETE;
     }
   }
+  
+  @Override
+  public long getLaunchStartTime(){
+	  this.readLock.lock();
+	    try {
+	      return this.containerLaunchStartTime;
+	    } finally {
+	      this.readLock.unlock();
+	    }
+  }
 
   @Override
   public String getUser() {
@@ -556,7 +566,7 @@ public class ContainerImpl implements Container {
   }
   
   
-  private class ContainerMonitor extends Thread{
+  public class ContainerMonitor extends Thread{
 		
 		private String memoryPath;
 
@@ -575,6 +585,8 @@ public class ContainerImpl implements Container {
 		private boolean isRunning;
 		
 		private boolean isUpdated;
+		
+		private int MIN_FOOTPRINT = 256;
 		
 		
 		public ContainerMonitor(){
@@ -618,7 +630,7 @@ public class ContainerImpl implements Container {
 				
 				//if we come here it means we need to sleep for 5s
 				 try {
-					    Thread.sleep(5000);
+					    Thread.sleep(2000);
 					} catch (InterruptedException e) {
 					    e.printStackTrace();
 				 }
@@ -626,11 +638,7 @@ public class ContainerImpl implements Container {
 			isRunning = false;
 		}
 		
-		public void setConfiguredMemory(int configuredMemory){
-			currentConfiguredMemory = configuredMemory;
-			isUpdated=true;
-		}
-		
+	
 		private void updateConfiguredMemory(){
 			
 	        int limitedMemory = getCurrentLimitedMemory();
@@ -643,6 +651,9 @@ public class ContainerImpl implements Container {
 	        }else{
 	        	while(currentConfiguredMemory < limitedMemory){
 	        		limitedMemory = limitedMemory - 1024;
+	        		if(limitedMemory<0){
+	        		   break;
+	        		}
 	        		DockerCommandMemory(limitedMemory);
 	        	}
 	        	DockerCommandMemory(currentConfiguredMemory);
@@ -677,21 +688,26 @@ public class ContainerImpl implements Container {
 			  
 			  
 		   }
-		//pulled by nodemanager
-		public boolean getIsSwapping(){
-			if (!isRunning)
-				return false;
-			return isSwapping;
-		}
+		
 		
 		//pull by monitor, in termes of M
-		public int getCurrentLimitedMemory(){
+		private int getCurrentLimitedMemory(){
 			if(!isRunning)
 				return 0;
 			String path=memoryPath+"memory.limit_in_bytes";
 			int limitedMemory = Integer.parseInt(readFileLines(path).get(0))/(1024*1024);;
 			return limitedMemory;
 		}
+		
+		//pulled by nodemanager, in termes of M
+		private int getCurrentUsedSwap(){
+			if(!isRunning)
+				return 0;
+			String path=memoryPath+"memory.stat";
+			currentUsedSwap=Integer.parseInt(readFileLines(path).get(0))/(1024*1024);
+			return currentUsedSwap;
+		}
+				
 		
 		//pulled by nodemanager, in termes of M
 		public int getCurrentUsedMemory(){
@@ -702,15 +718,34 @@ public class ContainerImpl implements Container {
 			return currentUsedMemory;
 		}
 		
-		//pulled by nodemanager, in termes of M
-		public int getCurrentUsedSwap(){
-			if(!isRunning)
-				return 0;
-		    String path=memoryPath+"memory.stat";
-		    currentUsedSwap=Integer.parseInt(readFileLines(path).get(0))/(1024*1024);
-			return currentUsedSwap;
+		public void setConfiguredMemory(int configuredMemory){
+			currentConfiguredMemory = configuredMemory;
+			isUpdated=true;
 		}
 		
+		public int getConfiguredMemory(){
+			return currentConfiguredMemory;
+		}
+		
+		//pulled by nodemanager
+		public boolean getIsSwapping(){
+			if(!isRunning)
+				return false;
+			return isSwapping;
+		}
+		
+		//recalim $claimSize MB memory from used container
+		//usually called when this container is swapping
+		//@return how much memory is reclaimed
+		public int reclaimMemory(int claimSize){
+		    if(!isRunning)
+		    	return -1;
+		    int left=Math.min(MIN_FOOTPRINT,currentUsedMemory-claimSize);
+		    int reclaimed=currentUsedMemory-left;
+		    currentConfiguredMemory=left;
+		    isUpdated=true;
+		    return reclaimed;
+		}
 		
 		
 		private String runDockerUpdateCommand(String[] command){
@@ -1396,4 +1431,11 @@ public class ContainerImpl implements Container {
       LocalResourceRequest resource) {
     return container.resourcesUploadPolicies.get(resource);
   }
+
+@Override
+public ContainerMonitor getContainerMonitor() {
+	//return container monitor for this container
+	return containerMonitor;
+}
+
 }

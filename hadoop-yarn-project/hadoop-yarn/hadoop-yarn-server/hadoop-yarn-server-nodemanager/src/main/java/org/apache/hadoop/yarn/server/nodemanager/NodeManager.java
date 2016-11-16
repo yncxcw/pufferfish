@@ -55,6 +55,7 @@ import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
 import org.apache.hadoop.yarn.server.api.records.NodeHealthStatus;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.ContainerManagerImpl;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.NodeMemoryManager;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.application.Application;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.apache.hadoop.yarn.server.nodemanager.metrics.NodeManagerMetrics;
@@ -91,7 +92,6 @@ public class NodeManager extends CompositeService
   private AtomicBoolean isStopping = new AtomicBoolean(false);
   private boolean rmWorkPreservingRestartEnabled;
   private boolean shouldExitOnShutdownEvent = false;
-
   public NodeManager() {
     super(NodeManager.class.getName());
   }
@@ -127,9 +127,10 @@ public class NodeManager extends CompositeService
   protected NMContext createNMContext(
       NMContainerTokenSecretManager containerTokenSecretManager,
       NMTokenSecretManagerInNM nmTokenSecretManager,
-      NMStateStoreService stateStore) {
+      NMStateStoreService stateStore,
+      Configuration conf) {
     return new NMContext(containerTokenSecretManager, nmTokenSecretManager,
-        dirsHandler, aclsManager, stateStore);
+        dirsHandler, aclsManager, stateStore,conf);
   }
 
   protected void doSecureLogin() throws IOException {
@@ -228,7 +229,7 @@ public class NodeManager extends CompositeService
     dirsHandler = nodeHealthChecker.getDiskHandler();
 
     this.context = createNMContext(containerTokenSecretManager,
-        nmTokenSecretManager, nmStore);
+        nmTokenSecretManager, nmStore,conf);
     
     nodeStatusUpdater =
         createNodeStatusUpdater(context, dispatcher, nodeHealthChecker);
@@ -336,6 +337,8 @@ public class NodeManager extends CompositeService
   public static class NMContext implements Context {
 
     private NodeId nodeId = null;
+    
+    //TODO test if this applications is null
     protected final ConcurrentMap<ApplicationId, Application> applications =
         new ConcurrentHashMap<ApplicationId, Application>();
 
@@ -356,11 +359,12 @@ public class NodeManager extends CompositeService
     private final NMStateStoreService stateStore;
     private boolean isDecommissioned = false;
     private NodeStatusUpdater nodeStatusUpdater;
+    public  NodeMemoryManager nodeMemoryManager;
 
     public NMContext(NMContainerTokenSecretManager containerTokenSecretManager,
         NMTokenSecretManagerInNM nmTokenSecretManager,
         LocalDirsHandlerService dirsHandler, ApplicationACLsManager aclsManager,
-        NMStateStoreService stateStore) {
+        NMStateStoreService stateStore,Configuration conf) {
       this.containerTokenSecretManager = containerTokenSecretManager;
       this.nmTokenSecretManager = nmTokenSecretManager;
       this.dirsHandler = dirsHandler;
@@ -369,11 +373,19 @@ public class NodeManager extends CompositeService
       this.nodeHealthStatus.setHealthReport("Healthy");
       this.nodeHealthStatus.setLastHealthReportTime(System.currentTimeMillis());
       this.stateStore = stateStore;
+      this.nodeMemoryManager=new NodeMemoryManager(this,conf);
     }
 
     /**
      * Usable only after ContainerManager is started.
      */
+    
+    @Override
+    public NodeMemoryManager getNodeMemoryManager(){
+    	return this.nodeMemoryManager;
+    }
+    
+    
     @Override
     public NodeId getNodeId() {
       return this.nodeId;

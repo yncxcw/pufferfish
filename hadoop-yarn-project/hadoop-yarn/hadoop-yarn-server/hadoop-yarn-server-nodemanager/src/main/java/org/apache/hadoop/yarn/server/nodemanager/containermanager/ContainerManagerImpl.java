@@ -314,6 +314,11 @@ public class ContainerManagerImpl extends CompositeService implements
           credentials, metrics, token, rcs.getStatus(), rcs.getExitCode(),
           rcs.getDiagnostics(), rcs.getKilled(), context);
       context.getContainers().put(containerId, container);
+      //Try to allocate memory from memory manager
+      int requestMemory=container.getResource().getMemory();
+      context.getNodeMemoryManager().MemoryReclaim(requestMemory);
+      LOG.info("try to reclaim memory for recover container: "+container.getContainerId().toString());
+      //dispatch
       dispatcher.getEventHandler().handle(
           new ApplicationContainerInitEvent(container));
     } else {
@@ -831,6 +836,14 @@ public class ContainerManagerImpl extends CompositeService implements
             context);
     ApplicationId applicationID =
         containerId.getApplicationAttemptId().getApplicationId();
+   
+    //Try to allocate memory from memory manager
+    int requestMemory=container.getResource().getMemory();
+    context.getNodeMemoryManager().MemoryReclaim(requestMemory);
+    LOG.info("try to reclaim memory for new container: "+container.getContainerId().toString());
+    
+    
+    
     if (context.getContainers().putIfAbsent(containerId, container) != null) {
       NMAuditLogger.logFailure(user, AuditConstants.START_CONTAINER,
         "ContainerManagerImpl", "Container already running on this node!",

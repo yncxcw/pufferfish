@@ -27,6 +27,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.server.api.records.NodeHealthStatus;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.NodeMemoryManager;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.application.Application;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.apache.hadoop.yarn.server.nodemanager.recovery.NMStateStoreService;
@@ -79,4 +80,7 @@ public interface Context {
   void setDecommissioned(boolean isDecommissioned);
 
   NodeStatusUpdater getNodeStatusUpdater();
+  
+  NodeMemoryManager getNodeMemoryManager();
+  
 }

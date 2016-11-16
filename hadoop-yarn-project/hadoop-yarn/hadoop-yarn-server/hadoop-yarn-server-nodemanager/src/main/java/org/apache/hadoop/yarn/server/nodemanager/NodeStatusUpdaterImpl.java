@@ -67,6 +67,7 @@ import org.apache.hadoop.yarn.server.api.records.NodeHealthStatus;
 import org.apache.hadoop.yarn.server.api.records.NodeStatus;
 import org.apache.hadoop.yarn.server.nodemanager.NodeManager.NMContext;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.ContainerManagerImpl;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.application.Application;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.application.ApplicationState;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.apache.hadoop.yarn.server.nodemanager.metrics.NodeManagerMetrics;
@@ -647,8 +648,20 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
                   new CMgrCompletedContainersEvent(containersToCleanup,
                     CMgrCompletedContainersEvent.Reason.BY_RESOURCEMANAGER));
             }
-            List<ApplicationId> appsToCleanup =
+            List<ApplicationId>  appsToCleanup =
                 response.getApplicationsToCleanup();
+            
+            //get flexible applications on this node.
+            List<ApplicationId> flexibleApplications=
+            	response.getFlexibleApplications();
+            //set this applications flexible
+            for(ApplicationId appId:flexibleApplications){
+            	Application application=(Application)context.getApplications().get(appId);
+                if(application!=null){
+                   application.setIsFlexible(true);	
+                }
+            }
+            
             //Only start tracking for keepAlive on FINISH_APP
             trackAppsForKeepAlive(appsToCleanup);
             if (!appsToCleanup.isEmpty()) {

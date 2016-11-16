@@ -121,8 +121,11 @@ public class RMAppImpl implements RMApp, Recoverable {
       = new LinkedHashMap<ApplicationAttemptId, RMAppAttempt>();
   private final long submitTime;
   private final Set<RMNode> updatedNodes = new HashSet<RMNode>();
+  
   private final String applicationType;
   private final Set<String> applicationTags;
+  
+  private final boolean isFlexibleAllocation;
 
   private final long attemptFailuresValidityInterval;
 
@@ -382,6 +385,9 @@ public class RMAppImpl implements RMApp, Recoverable {
     this.applicationType = applicationType;
     this.applicationTags = applicationTags;
     this.amReq = amReq;
+    //TODO we will initialize the flexible allocation later
+    //by ApplicationSubmissionContext.nodeLableExpression
+    this.isFlexibleAllocation=true;
 
     int globalMaxAppAttempts = conf.getInt(YarnConfiguration.RM_AM_MAX_ATTEMPTS,
         YarnConfiguration.DEFAULT_RM_AM_MAX_ATTEMPTS);
@@ -451,6 +457,13 @@ public class RMAppImpl implements RMApp, Recoverable {
   @Override
   public String getUser() {
     return this.user;
+  }
+  
+  
+  @Override
+  public boolean getIsFlexibleAllocation(){
+	  
+	return this.isFlexibleAllocation;  
   }
 
   @Override

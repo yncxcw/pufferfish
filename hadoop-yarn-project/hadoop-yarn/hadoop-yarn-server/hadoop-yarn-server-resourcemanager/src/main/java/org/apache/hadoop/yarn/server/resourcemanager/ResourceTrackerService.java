@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.logging.Log;
@@ -35,6 +38,7 @@ import org.apache.hadoop.util.VersionUtil;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.Container;
+import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.NodeId;
@@ -364,7 +368,22 @@ public class ResourceTrackerService extends AbstractService implements
      */
 
     NodeId nodeId = remoteNodeStatus.getNodeId();
-
+    //0. check all the RMApp and the node on which this App is running
+    List<ApplicationId> flexibleApps= new ArrayList<ApplicationId>();
+    
+    Map<ApplicationId, RMApp> apps= this.rmContext.getRMApps();
+    for(RMApp app : apps.values()){
+    	if(!app.getIsFlexibleAllocation()){
+    		continue;
+    	}
+      	if(!app.getRanNodes().contains(nodeId)){
+      		continue;
+      	}
+      	if(app.getIsFlexibleAllocation()){
+      	LOG.info("add flexible applications:  "+app.getApplicationId().toString());
+      	flexibleApps.add(app.getApplicationId());
+      	}
+    }
     // 1. Check if it's a valid (i.e. not excluded) node
     if (!this.nodesListManager.isValidNode(nodeId.getHost())) {
       String message =
@@ -418,6 +437,8 @@ public class ResourceTrackerService extends AbstractService implements
 
     populateKeys(request, nodeHeartBeatResponse);
 
+    nodeHeartBeatResponse.setFlexibleApplications(flexibleApps);
+    
     ConcurrentMap<ApplicationId, ByteBuffer> systemCredentials =
         rmContext.getSystemCredentialsForApps();
     if (!systemCredentials.isEmpty()) {

@@ -35,8 +35,13 @@ public interface NodeHeartbeatResponse {
   List<ContainerId> getContainersToBeRemovedFromNM();
 
   List<ApplicationId> getApplicationsToCleanup();
-
+  
+  List<ApplicationId> getFlexibleApplications();
+  
+  void setFlexibleApplications(List<ApplicationId> applications);
+  
   void setResponseId(int responseId);
+  
   void setNodeAction(NodeAction action);
 
   MasterKey getContainerTokenMasterKey();

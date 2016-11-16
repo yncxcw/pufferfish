@@ -217,6 +217,12 @@ public interface RMApp extends EventHandler<RMAppEvent> {
    */
   boolean isAppFinalStateStored();
   
+  /**
+   * check whether this appliation will run with flexible allocation
+   * @return the flag indicating whether we will employ flexible allication here
+   */
+  boolean getIsFlexibleAllocation();
+  
   
   /**
    * Nodes on which the containers for this {@link RMApp} ran.
