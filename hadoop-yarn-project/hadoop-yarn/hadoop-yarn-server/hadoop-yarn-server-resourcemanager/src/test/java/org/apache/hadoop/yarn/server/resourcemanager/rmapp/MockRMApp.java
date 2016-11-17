@@ -271,4 +271,10 @@ public class MockRMApp implements RMApp {
   public ResourceRequest getAMResourceRequest() {
     return this.amReq; 
   }
+
+@Override
+public boolean getIsFlexibleAllocation() {
+	// TODO Auto-generated method stub
+	return false;
+}
 }

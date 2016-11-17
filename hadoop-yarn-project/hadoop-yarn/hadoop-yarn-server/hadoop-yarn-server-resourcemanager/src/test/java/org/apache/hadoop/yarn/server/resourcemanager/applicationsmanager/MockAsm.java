@@ -190,6 +190,12 @@ public abstract class MockAsm extends MockApps {
     public ResourceRequest getAMResourceRequest() {
       return this.amReq; 
     }
+
+	@Override
+	public boolean getIsFlexibleAllocation() {
+		// TODO Auto-generated method stub
+		return false;
+	}
   }
 
   public static RMApp newApplication(int i) {

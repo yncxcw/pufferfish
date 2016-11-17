@@ -39,6 +39,7 @@ import org.apache.hadoop.yarn.security.ContainerTokenIdentifier;
 import org.apache.hadoop.yarn.server.api.protocolrecords.NMContainerStatus;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerEvent;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerImpl.ContainerMonitor;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerState;
 import org.apache.hadoop.yarn.server.utils.BuilderUtils;
 
@@ -140,4 +141,16 @@ public class MockContainer implements Container {
   public NMContainerStatus getNMContainerStatus() {
     return null;
   }
+
+@Override
+public ContainerMonitor getContainerMonitor() {
+	// TODO Auto-generated method stub
+	return null;
+}
+
+@Override
+public long getLaunchStartTime() {
+	// TODO Auto-generated method stub
+	return 0;
+}
 }

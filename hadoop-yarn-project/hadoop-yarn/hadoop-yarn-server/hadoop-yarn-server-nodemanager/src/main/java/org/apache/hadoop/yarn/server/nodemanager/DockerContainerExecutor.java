@@ -193,8 +193,15 @@ public class DockerContainerExecutor extends ContainerExecutor {
     lfs.util().copy(nmPrivateTokensPath, tokenDst);
     
     //configure the memory
-    String memory = Integer.toString(container.getResource().getMemory());
-
+    String memory;
+    if(isFlexible && !container.getContainerId().toString().endsWith("000001")){
+    	//TODO we can do it as a configuration
+    	 LOG.info("launch a flexible and nonam-conainer");
+         memory ="4096"; 
+    }else{
+    	 LOG.info("launch a normal container");
+    	 memory = Integer.toString(container.getResource().getMemory());
+    }
 
 
     String localDirMount = toMount(localDirs);

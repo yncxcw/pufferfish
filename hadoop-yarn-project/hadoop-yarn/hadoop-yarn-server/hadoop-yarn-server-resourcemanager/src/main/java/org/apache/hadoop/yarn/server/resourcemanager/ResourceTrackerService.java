@@ -373,9 +373,6 @@ public class ResourceTrackerService extends AbstractService implements
     
     Map<ApplicationId, RMApp> apps= this.rmContext.getRMApps();
     for(RMApp app : apps.values()){
-    	if(!app.getIsFlexibleAllocation()){
-    		continue;
-    	}
       	if(!app.getRanNodes().contains(nodeId)){
       		continue;
       	}

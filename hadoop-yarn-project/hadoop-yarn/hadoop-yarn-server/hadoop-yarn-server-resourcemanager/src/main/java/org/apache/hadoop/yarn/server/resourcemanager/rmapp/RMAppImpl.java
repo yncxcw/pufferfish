@@ -387,7 +387,11 @@ public class RMAppImpl implements RMApp, Recoverable {
     this.amReq = amReq;
     //TODO we will initialize the flexible allocation later
     //by ApplicationSubmissionContext.nodeLableExpression
-    this.isFlexibleAllocation=true;
+    if(submissionContext.getNodeLabelExpression()=="flex"){
+       this.isFlexibleAllocation=true;
+    }else{
+       this.isFlexibleAllocation=false;
+    }
 
     int globalMaxAppAttempts = conf.getInt(YarnConfiguration.RM_AM_MAX_ATTEMPTS,
         YarnConfiguration.DEFAULT_RM_AM_MAX_ATTEMPTS);

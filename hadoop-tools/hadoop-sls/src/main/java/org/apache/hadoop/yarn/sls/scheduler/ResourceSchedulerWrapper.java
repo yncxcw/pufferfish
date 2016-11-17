@@ -96,7 +96,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SlidingWindowReservoir;
 import com.codahale.metrics.Timer;
 
-@Private
+//@Private
 @Unstable
 public class ResourceSchedulerWrapper
     extends AbstractYarnScheduler<SchedulerApplicationAttempt, SchedulerNode>

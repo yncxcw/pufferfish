@@ -843,7 +843,6 @@ public class ContainerManagerImpl extends CompositeService implements
     LOG.info("try to reclaim memory for new container: "+container.getContainerId().toString());
     
     
-    
     if (context.getContainers().putIfAbsent(containerId, container) != null) {
       NMAuditLogger.logFailure(user, AuditConstants.START_CONTAINER,
         "ContainerManagerImpl", "Container already running on this node!",

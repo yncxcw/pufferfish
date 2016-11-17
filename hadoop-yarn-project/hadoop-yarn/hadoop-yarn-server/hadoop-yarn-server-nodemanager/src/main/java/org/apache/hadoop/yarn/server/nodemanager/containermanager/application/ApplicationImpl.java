@@ -98,14 +98,23 @@ public class ApplicationImpl implements Application {
   
   @Override
   public boolean getIsFlexible(){
-	  
+	this.readLock.lock();
+	  try { 
 	  return this.isFlexible;
+	  }finally{
+		  this.readLock.unlock();
+	  }
   }
   
   @Override
   public void setIsFlexible(boolean flexible){
+	 this.writeLock.lock();
+	 try{
 	  LOG.info("Application "+appId+" is set flexible");
 	  this.isFlexible= flexible;
+	 }finally{
+		 this.writeLock.unlock();
+	 }
   }
 
   @Override
