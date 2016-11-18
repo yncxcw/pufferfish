@@ -554,6 +554,8 @@ public class ContainerLaunch implements Callable<Integer> {
     protected abstract void link(Path src, Path dst) throws IOException;
 
     protected abstract void mkdir(Path path) throws IOException;
+    
+    public abstract void cd(String path) throws IOException;
   }
 
   private static final class UnixShellScriptBuilder extends ShellScriptBuilder {
@@ -580,6 +582,12 @@ public class ContainerLaunch implements Callable<Integer> {
     @Override
     public void env(String key, String value) {
       line("export ", key, "=\"", value, "\"");
+    }
+    
+    
+    @Override
+    public void cd(String path){
+      line("cd", path); 	
     }
 
     @Override
@@ -647,6 +655,12 @@ public class ContainerLaunch implements Callable<Integer> {
           path.toString(), path.toString()));
       errorCheck();
     }
+
+	@Override
+	public void cd(String path) throws IOException {
+		// TODO Auto-generated method stub
+		
+	}
   }
 
   private static void putEnvIfNotNull(

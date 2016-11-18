@@ -147,9 +147,9 @@ public class DockerContainerExecutor extends ContainerExecutor {
                              List<String> localDirs, List<String> logDirs) throws IOException {
     String containerImageName = getConf().get(YarnConfiguration.NM_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME,
     		           YarnConfiguration.NM_DEFAULT_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME);
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("containerImageName from launchContext: " + containerImageName);
-    }
+   
+    LOG.info("containerImageName from launchContext: " + containerImageName);
+    
     Preconditions.checkArgument(!Strings.isNullOrEmpty(containerImageName), "Container image must not be null");
     containerImageName = containerImageName.replaceAll("['\"]", "");
 
@@ -225,6 +225,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
         .append(" ")
         .append(containerImageName)
         .toString();
+    LOG.info("command strings "+commandStr);
     String dockerPidScript = "`" + dockerExecutor + " inspect --format {{.State.Pid}} " + containerIdStr + "`";
     // Create new local launch wrapper script
     LocalWrapperScriptBuilder sb =
@@ -251,6 +252,8 @@ public class DockerContainerExecutor extends ContainerExecutor {
       if (LOG.isDebugEnabled()) {
         LOG.debug("launchContainer: " + commandStr + " " + Joiner.on(" ").join(command));
       }
+      
+      //Thread.sleep(400000);
       shExec = new ShellCommandExecutor(
         command,
         new File(containerWorkDir.toUri().getPath()),

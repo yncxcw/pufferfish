@@ -105,7 +105,7 @@ public class ContainerImpl implements Container {
   private long containerLaunchStartTime=-1;
   private static Clock clock = new SystemClock();
   
-  public ContainerMonitor containerMonitor = new ContainerMonitor();
+  public ContainerMonitor containerMonitor; 
 
   /** The NM-wide configuration - not specific to this container */
   private final Configuration daemonConf;
@@ -152,6 +152,7 @@ public class ContainerImpl implements Container {
     this.readLock = readWriteLock.readLock();
     this.writeLock = readWriteLock.writeLock();
     this.context = context;
+    this.containerMonitor = new ContainerMonitor();
 
     stateMachine = stateMachineFactory.make(this);
   }
@@ -572,7 +573,7 @@ public class ContainerImpl implements Container {
 
 		private String name;
 		
-		private String dockerId;
+		private String dockerId=null;
 		
 		private int currentConfiguredMemory;
 		
@@ -590,20 +591,25 @@ public class ContainerImpl implements Container {
 		
 		
 		public ContainerMonitor(){
+			LOG.info("start launching monitor");
 			//YARN container id
 			this.name = containerId.toString();
+			LOG.info("container id:"+this.name);
 			//in terms of M
 			this.currentConfiguredMemory = resource.getMemory();
-			//get its docker id
-			String[] containerIdCommands={"docker","inspect","--format={{.Id}}",name};
-		    dockerId  = runDockerUpdateCommand(containerIdCommands);
-		    //initial the memory path
-		    memoryPath= "/sys/fs/cgroup/memory"+dockerId+"/memory/";  
+			
 		    
 		}
 		
 		@Override
 		public void run(){
+			//get its docker id
+			String[] containerIdCommands={"docker","inspect","--format={{.Id}}",name};
+		    dockerId  = runDockerUpdateCommand(containerIdCommands);
+		    //initial the memory path
+		    memoryPath= "/sys/fs/cgroup/memory"+dockerId+"/memory/";
+		    LOG.info("finish launching monitor and dockerId: "+dockerId);
+		    
 			isRunning = true;
 			while(stateMachine.getCurrentState() == ContainerState.RUNNING){
 				//get current used memory

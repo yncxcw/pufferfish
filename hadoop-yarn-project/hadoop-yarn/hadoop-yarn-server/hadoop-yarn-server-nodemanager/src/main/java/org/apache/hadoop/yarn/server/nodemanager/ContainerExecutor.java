@@ -225,6 +225,10 @@ public abstract class ContainerExecutor implements Configurable {
         sb.env(env.getKey().toString(), env.getValue().toString());
       }
     }
+    
+    //cd to $PWD
+    sb.cd("pwd");
+    
     if (resources != null) {
       for (Map.Entry<Path,List<String>> entry : resources.entrySet()) {
         for (String linkName : entry.getValue()) {

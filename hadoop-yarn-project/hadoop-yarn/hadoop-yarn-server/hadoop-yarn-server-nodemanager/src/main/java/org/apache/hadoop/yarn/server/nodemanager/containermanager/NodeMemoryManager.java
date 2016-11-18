@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -76,17 +77,17 @@ public class NodeMemoryManager {
 		 this.writeLock.lock();
 		 //recompute current used
 		 nodeCurrentUsed                  = 0;
-		 List<Container> containers       = (List<Container>) this.context.getContainers().values();
-		 List<Container> swappingContainer= new ArrayList<Container>();
+		 Set<ContainerId> containerIds    = this.context.getContainers().keySet();
+		 List<Container>  swappingContainer= new ArrayList<Container>();
 		 //we delete out of date container
 		 for(ContainerId containerId : this.containerToMemoryUsage.keySet()){
-			 if(!containers.contains(containerId)){
+			 if(!containerIds.contains(containerId)){
 				 this.containerToMemoryUsage.remove(containerId);
 			 }
 		 }
 		 //we update the newly memory consumption
-		 for(Container container : containers){
-			 ContainerId containerId = container.getContainerId();
+		 for(ContainerId containerId : containerIds){
+			 Container container     = this.context.getContainers().get(containerId);
 			 int currentUsed = container.getContainerMonitor().getCurrentUsedMemory();
 			 //let it go, if this container is not running yet
 			 if(currentUsed == 0){
@@ -102,9 +103,8 @@ public class NodeMemoryManager {
                          getApplicationId()
                          );
                if(!app.getIsFlexible()){
-                   continue;
+            	   swappingContainer.add(container); 
                 }
-				swappingContainer.add(container);
 			 }
 			 nodeCurrentUsed+=currentUsed;
 		 }
@@ -183,7 +183,7 @@ public class NodeMemoryManager {
 		    if(claimedSize < thisRound){
 		    	it.remove();
 		    }
-		    requestSize-=thisRound;
+		    requestSize-=claimedSize;
 	  }
 	    if(scontainers.size() == 0 || requestSize <=10){
 	    	break;
