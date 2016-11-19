@@ -219,15 +219,15 @@ public abstract class ContainerExecutor implements Configurable {
   }
 
   public void writeLaunchEnv(OutputStream out, Map<String, String> environment, Map<Path, List<String>> resources, List<String> command) throws IOException{
-    ContainerLaunch.ShellScriptBuilder sb = ContainerLaunch.ShellScriptBuilder.create();
+    
+	LOG.info("starting write our launch env");  
+	ContainerLaunch.ShellScriptBuilder sb = ContainerLaunch.ShellScriptBuilder.create();
     if (environment != null) {
       for (Map.Entry<String,String> env : environment.entrySet()) {
         sb.env(env.getKey().toString(), env.getValue().toString());
       }
     }
     
-    //cd to $PWD
-    sb.cd("pwd");
     
     if (resources != null) {
       for (Map.Entry<Path,List<String>> entry : resources.entrySet()) {
@@ -238,7 +238,8 @@ public abstract class ContainerExecutor implements Configurable {
     }
 
     sb.command(command);
-
+    LOG.info("write out command"+command);
+    
     PrintStream pout = null;
     try {
       pout = new PrintStream(out, false, "UTF-8");

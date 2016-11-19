@@ -275,6 +275,7 @@ public class ContainerLaunch implements Callable<Integer> {
           localResources, nmPrivateClasspathJarDir);
         
         // Write out the environment
+        LOG.info("write out launch env");
         exec.writeLaunchEnv(containerScriptOutStream, environment, localResources,
             launchContext.getCommands());
         
@@ -587,7 +588,8 @@ public class ContainerLaunch implements Callable<Integer> {
     
     @Override
     public void cd(String path){
-      line("cd", path); 	
+      line("cd \"", path,"\""); 
+      line();
     }
 
     @Override

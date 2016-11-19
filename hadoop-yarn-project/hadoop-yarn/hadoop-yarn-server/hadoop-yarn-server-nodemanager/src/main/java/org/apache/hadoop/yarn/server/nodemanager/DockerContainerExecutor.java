@@ -145,7 +145,9 @@ public class DockerContainerExecutor extends ContainerExecutor {
                              Path nmPrivateContainerScriptPath, Path nmPrivateTokensPath,
                              String userName, String appId, Path containerWorkDir,
                              List<String> localDirs, List<String> logDirs) throws IOException {
-    String containerImageName = getConf().get(YarnConfiguration.NM_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME,
+    
+	LOG.info("start launching");
+	String containerImageName = getConf().get(YarnConfiguration.NM_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME,
     		           YarnConfiguration.NM_DEFAULT_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME);
    
     LOG.info("containerImageName from launchContext: " + containerImageName);
@@ -253,7 +255,6 @@ public class DockerContainerExecutor extends ContainerExecutor {
         LOG.debug("launchContainer: " + commandStr + " " + Joiner.on(" ").join(command));
       }
       
-      //Thread.sleep(400000);
       shExec = new ShellCommandExecutor(
         command,
         new File(containerWorkDir.toUri().getPath()),
@@ -302,6 +303,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
   public void writeLaunchEnv(OutputStream out, Map<String, String> environment, Map<Path, List<String>> resources, List<String> command) throws IOException {
     ContainerLaunch.ShellScriptBuilder sb = ContainerLaunch.ShellScriptBuilder.create();
 
+    LOG.info("starting write our launch env"); 
     Set<String> exclusionSet = new HashSet<String>();
     exclusionSet.add(YarnConfiguration.NM_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME);
     exclusionSet.add(ApplicationConstants.Environment.HADOOP_YARN_HOME.name());
@@ -317,6 +319,11 @@ public class DockerContainerExecutor extends ContainerExecutor {
         }
       }
     }
+    
+    //cd to $PWD
+    sb.cd("$PWD");
+    LOG.info("try to cd to $PWD");
+    //
     if (resources != null) {
       for (Map.Entry<Path,List<String>> entry : resources.entrySet()) {
         for (String linkName : entry.getValue()) {
@@ -346,8 +353,8 @@ public class DockerContainerExecutor extends ContainerExecutor {
         ps.close();
       }
     }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Script: " + baos.toString("UTF-8"));
+    {
+      LOG.info("Script: " + baos.toString("UTF-8"));
     }
   }
 
