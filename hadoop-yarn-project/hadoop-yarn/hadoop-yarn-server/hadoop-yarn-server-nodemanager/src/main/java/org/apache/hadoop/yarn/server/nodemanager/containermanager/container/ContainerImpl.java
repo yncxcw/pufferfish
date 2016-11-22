@@ -591,24 +591,34 @@ public class ContainerImpl implements Container {
 		
 		
 		public ContainerMonitor(){
-			LOG.info("start launching monitor");
+			
 			//YARN container id
 			this.name = containerId.toString();
 			LOG.info("container id:"+this.name);
 			//in terms of M
 			this.currentConfiguredMemory = resource.getMemory();
+			this.isSwapping=false;
 			
 		    
 		}
 		
 		@Override
 		public void run(){
+			try {
+				//wait untill the container is launched
+				Thread.sleep(10000);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			LOG.info("start launching threads "+name);
 			//get its docker id
 			String[] containerIdCommands={"docker","inspect","--format={{.Id}}",name};
-		    dockerId  = runDockerUpdateCommand(containerIdCommands);
+		    dockerId = runDockerUpdateCommand(containerIdCommands);
 		    //initial the memory path
-		    memoryPath= "/sys/fs/cgroup/memory"+dockerId+"/memory/";
-		    LOG.info("finish launching monitor and dockerId: "+dockerId);
+		    LOG.info("get dockerId "   +dockerId);
+		    memoryPath= "/sys/fs/cgroup/memory/docker/"+dockerId+"/";
+		    LOG.info("get memory path:"+memoryPath);
 		    
 			isRunning = true;
 			while(stateMachine.getCurrentState() == ContainerState.RUNNING){
@@ -619,13 +629,19 @@ public class ContainerImpl implements Container {
 				//if used memory+swap > configured and swap > threadshhod
 				if(currentUsedMemory+currentUsedSwap>currentConfiguredMemory
 					&& currentUsedSwap > 500){
-				   isSwapping  = true;
-				   //freeze the cpu usage
-				   DockerCommandCpuQuota(1000);
+				   if(!isSwapping){
+					 DockerCommandCpuQuota(1000);
+					 isSwapping  = true;
+				   }
+				   
+				  
 				}else{
-				   isSwapping = false;
-				   //resume the cpu usage
-				   DockerCommandCpuQuota(-1);
+				   if(isSwapping){
+					 //resume the cpu usage  
+					 DockerCommandCpuQuota(-1);
+					 isSwapping = false;
+				   }
+				   
 				}
 				
 				//update configured memory
@@ -634,7 +650,7 @@ public class ContainerImpl implements Container {
 				  isUpdated=false;	
 				}
 				
-				//if we come here it means we need to sleep for 5s
+				//if we come here it means we need to sleep for 2s
 				 try {
 					    Thread.sleep(2000);
 					} catch (InterruptedException e) {
@@ -701,7 +717,8 @@ public class ContainerImpl implements Container {
 			if(!isRunning)
 				return 0;
 			String path=memoryPath+"memory.limit_in_bytes";
-			int limitedMemory = Integer.parseInt(readFileLines(path).get(0))/(1024*1024);;
+			int limitedMemory = Integer.parseInt(readFileLines(path).get(0))/(1024*1024);
+			//LOG.info("get limited memory:"+name+"  "+limitedMemory);
 			return limitedMemory;
 		}
 		
@@ -710,7 +727,10 @@ public class ContainerImpl implements Container {
 			if(!isRunning)
 				return 0;
 			String path=memoryPath+"memory.stat";
-			currentUsedSwap=Integer.parseInt(readFileLines(path).get(0))/(1024*1024);
+			String SwapString=readFileLines(path).get(6);
+			String SwapString1=SwapString.split("\\s++")[1];
+			currentUsedSwap=Integer.parseInt(SwapString1)/(1024*1024);
+			//LOG.info("get swap memory:"+name+"  "+currentUsedSwap);
 			return currentUsedSwap;
 		}
 				
@@ -720,7 +740,8 @@ public class ContainerImpl implements Container {
 			if(!isRunning)
 				return 0;
 			String path=memoryPath+"memory.usage_in_bytes";
-			currentUsedMemory = Integer.parseInt(readFileLines(path).get(0))/(1024*1024);
+			currentUsedMemory=(int)(Long.parseLong(readFileLines(path).get(0))/(1024*1024));
+			//LOG.info("get used memory:"+name+"  "+currentUsedMemory);
 			return currentUsedMemory;
 		}
 		
@@ -788,13 +809,14 @@ public class ContainerImpl implements Container {
 		        break; 
 			 }
 			
-			 return shExec.getOutput();
+			 return shExec.getOutput().trim();
 		   }
 		
 		private List<String> readFileLines(String path){
 			ArrayList<String> results= new ArrayList<String>();
 			File file = new File(path);
 		    BufferedReader reader = null;
+		    LOG.info("try to read"+path);
 		    try {
 		        reader = new BufferedReader(new FileReader(file));
 		        String tempString = null;
@@ -805,7 +827,7 @@ public class ContainerImpl implements Container {
 		            }
 		            reader.close();
 		        } catch (IOException e) {
-		            e.printStackTrace();
+		        	LOG.info("file error: "+e.toString());
 		        } finally {
 		            if (reader != null) {
 		                try {
