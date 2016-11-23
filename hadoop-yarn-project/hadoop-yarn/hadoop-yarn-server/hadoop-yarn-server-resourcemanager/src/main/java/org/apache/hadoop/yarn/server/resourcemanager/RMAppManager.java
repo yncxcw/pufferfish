@@ -326,6 +326,43 @@ public class RMAppManager implements EventHandler<RMAppManagerEvent>,
       ApplicationSubmissionContext submissionContext, long submitTime,
       String user, boolean isRecovery) throws YarnException {
     ApplicationId applicationId = submissionContext.getApplicationId();
+    
+    boolean isFlex=false;
+    
+    if(submissionContext.getAMContainerResourceRequest().
+            getNodeLabelExpression()!=null){
+    
+    String[] amNodeLabel=submissionContext.getAMContainerResourceRequest().
+    		                getNodeLabelExpression().split(":");
+    
+   
+    
+    if(amNodeLabel.length==1){
+    	LOG.info(amNodeLabel[0]);
+    	//either only flex
+    	if(amNodeLabel[0].equals("flex")){
+    		submissionContext.getAMContainerResourceRequest().
+    		                 setNodeLabelExpression(null);
+    		isFlex=true;
+    		
+        //or only nodelabel
+    	}else{
+    		submissionContext.getAMContainerResourceRequest().
+    		                  setNodeLabelExpression(amNodeLabel[0]);
+    		
+    	}
+    //must be 2
+    }else{
+       	if(amNodeLabel[0].equals("flex")){
+       		isFlex=true;
+       		
+       	}
+       	submissionContext.getAMContainerResourceRequest().
+       	                      setNodeLabelExpression(amNodeLabel[1]);
+    }
+    
+   }
+    
     ResourceRequest amReq =
         validateAndCreateResourceRequest(submissionContext, isRecovery);
 
@@ -336,7 +373,7 @@ public class RMAppManager implements EventHandler<RMAppManagerEvent>,
             submissionContext.getQueue(),
             submissionContext, this.scheduler, this.masterService,
             submitTime, submissionContext.getApplicationType(),
-            submissionContext.getApplicationTags(), amReq);
+            submissionContext.getApplicationTags(), amReq,isFlex);
 
     // Concurrent app submissions with same applicationId will fail here
     // Concurrent app submissions with different applicationIds will not

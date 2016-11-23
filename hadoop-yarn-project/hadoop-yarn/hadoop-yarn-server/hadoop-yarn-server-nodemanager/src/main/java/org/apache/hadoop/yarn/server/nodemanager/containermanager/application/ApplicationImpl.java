@@ -110,7 +110,6 @@ public class ApplicationImpl implements Application {
   public void setIsFlexible(boolean flexible){
 	 this.writeLock.lock();
 	 try{
-	  LOG.info("Application "+appId+" is set flexible");
 	  this.isFlexible= flexible;
 	 }finally{
 		 this.writeLock.unlock();

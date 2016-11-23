@@ -153,7 +153,7 @@ public class RMHATestBase extends ClientBaseWithFixes{
               this.rmContext.getScheduler(),
               this.rmContext.getApplicationMasterService(),
               submitTime, submissionContext.getApplicationType(),
-              submissionContext.getApplicationTags(), null);
+              submissionContext.getApplicationTags(), null,false);
       this.rmContext.getRMApps().put(submissionContext.getApplicationId(),
           application);
       //Do not send RMAppEventType.START event

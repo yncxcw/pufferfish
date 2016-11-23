@@ -14,6 +14,10 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -21,7 +25,11 @@ import org.apache.hadoop.yarn.server.nodemanager.Context;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.application.Application;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 
+
 public class NodeMemoryManager {
+	
+	
+	private static final Log LOG = LogFactory.getLog(NodeMemoryManager.class);
 	
 	 //TODO add log for debugging
 	 //TODO for memory usage over 95%, NodeMemoryManager should reclaim memory actively
@@ -45,7 +53,7 @@ public class NodeMemoryManager {
 	 int nodeCurrentUsed;
 
 	 //used to do moving avarage ##of 5
-	 Map<ContainerId,Integer> containerToMemoryUsage;
+	 Map<ContainerId,Long> containerToMemoryUsage;
 	 
 	 //used to lock when read
 	 Lock readLock;
@@ -59,11 +67,16 @@ public class NodeMemoryManager {
 		 this.nodeTotal = conf.getInt(
 			      YarnConfiguration.NM_PMEM_MB, YarnConfiguration.DEFAULT_NM_PMEM_MB
 			                         );
-		 this.containerToMemoryUsage  = new HashMap<ContainerId,Integer>();
+		 this.containerToMemoryUsage  = new HashMap<ContainerId,Long>();
 		 //TODO add configuration
-		 this.STOP_BALLOON_LIMIT      = 0.9;
-		 this.CONTAINER_BALLOON_RATIO = 0.5;
-		 this.RECLAIM_BALLOON_LIMIT   = 0.95;
+		 this.STOP_BALLOON_LIMIT      = conf.getDouble(YarnConfiguration.RATIO_STOP_BALLON_LIMIT,
+				                                       YarnConfiguration.DEFAULT_RATIO_STOP_BALLON_LIMIT);
+		 
+		 this.CONTAINER_BALLOON_RATIO = conf.getDouble(YarnConfiguration.RATIO_CONTAINER_BALLON,
+				                                       YarnConfiguration.DEFAULT_RATIO_CONTAINER_BALLON);
+		 
+		 this.RECLAIM_BALLOON_LIMIT   = conf.getDouble(YarnConfiguration.RATIO_RECLAIM_BALLOON_LIMIT,
+				                                       YarnConfiguration.DEFAULT_RATIO__RECLAIM_BALLOON_LIMIT);
 		 
 		 ReadWriteLock readWriteLock  = new ReentrantReadWriteLock();
 		 this.readLock  = readWriteLock.readLock();
@@ -73,22 +86,24 @@ public class NodeMemoryManager {
 	 //called in ContainerMonitor preodically to balloon the contaier out
 	 //of its demand
 	 public void MemoryBalloon(){
+	 LOG.info("memory balloon called");
      try {
 		 this.writeLock.lock();
 		 //recompute current used
 		 nodeCurrentUsed                  = 0;
 		 Set<ContainerId> containerIds    = this.context.getContainers().keySet();
 		 List<Container>  swappingContainer= new ArrayList<Container>();
-		 //we delete out of date container
+		 //we delete out of date containercontainerToMemoryUsage
 		 for(ContainerId containerId : this.containerToMemoryUsage.keySet()){
 			 if(!containerIds.contains(containerId)){
 				 this.containerToMemoryUsage.remove(containerId);
 			 }
 		 }
+		
 		 //we update the newly memory consumption
 		 for(ContainerId containerId : containerIds){
 			 Container container     = this.context.getContainers().get(containerId);
-			 int currentUsed = container.getContainerMonitor().getCurrentUsedMemory();
+			 long currentUsed        = container.getContainerMonitor().getCurrentUsedMemory();
 			 //let it go, if this container is not running yet
 			 if(currentUsed == 0){
 				continue;
@@ -102,7 +117,8 @@ public class NodeMemoryManager {
                          getApplicationAttemptId().
                          getApplicationId()
                          );
-               if(!app.getIsFlexible()){
+               if(app.getIsFlexible()){
+            	   LOG.info("add swapping container"+container.getContainerId());
             	   swappingContainer.add(container); 
                 }
 			 }
@@ -119,7 +135,9 @@ public class NodeMemoryManager {
 		 //usage for this container
 		 double usage = nodeCurrentUsed*1.0/nodeTotal*1.0;
 		 if(usage > RECLAIM_BALLOON_LIMIT){
+			
 			 int memoryClaimed=(int)(usage-RECLAIM_BALLOON_LIMIT)*nodeTotal;
+			 LOG.info("out of limit reclaim: "+memoryClaimed);
 			 this.MemoryReclaim(memoryClaimed);
 			 return;
 			 
@@ -133,11 +151,13 @@ public class NodeMemoryManager {
 		  for(Container cnt : swappingContainer){
 			    //compute new memory after balloon
 			    int newMemory    = (int) (cnt.getContainerMonitor().getConfiguredMemory()*balloonRatio);
+			    long newCntMemory = cnt.getContainerMonitor().getConfiguredMemory()+newMemory;
 			    int currentUsage = nodeCurrentUsed+newMemory;
 			    if(currentUsage*1.0/nodeTotal*1.0 > STOP_BALLOON_LIMIT){
 			    	break;
 			    }
-			    cnt.getContainerMonitor().setConfiguredMemory(newMemory);
+			    LOG.info("container"+cnt.getContainerId()+" balloon to"+newCntMemory);
+			    cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
 			    nodeCurrentUsed+=newMemory;
 			    balloonRatio/=2;
 		  }
@@ -148,6 +168,7 @@ public class NodeMemoryManager {
  }
 	 
  public void MemoryReclaim(int requestSize){
+ LOG.info("memory reclaim called");
  try {
 	this.readLock.lock();
 	 //we bypass memory reclaim
@@ -176,7 +197,7 @@ public class NodeMemoryManager {
 	    int thisRound = requestSize/scontainers.size();
 	    Iterator<Container> it=scontainers.iterator();
 	    while(it.hasNext()){
-		    int claimedSize =it.next().getContainerMonitor().
+		    long claimedSize =it.next().getContainerMonitor().
 				         reclaimMemory(thisRound);
 		    
 		    //no more memory for reclaiming for this container
@@ -207,7 +228,7 @@ public class NodeMemoryManager {
 			 //we choose container ordered by its submission time
 			 //by doing so, we restrict the affect of swapness to 
 			 //as less container as possible
-			 int claimedSize = bcontainers.get(i).
+			 long claimedSize = bcontainers.get(i).
 					             getContainerMonitor().reclaimMemory(requestSize);
 			 requestSize-=claimedSize;	 
 		 }

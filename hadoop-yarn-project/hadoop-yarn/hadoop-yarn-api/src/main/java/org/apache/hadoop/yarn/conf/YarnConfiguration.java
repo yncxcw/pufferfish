@@ -827,6 +827,18 @@ public class YarnConfiguration extends Configuration {
   public static final String NM_PMEM_MB = NM_PREFIX + "resource.memory-mb";
   public static final int DEFAULT_NM_PMEM_MB = 8 * 1024;
 
+  /** Ratio of memory of NM_PMEM_MB that should stop balloning*/
+  public static final String RATIO_STOP_BALLON_LIMIT=NM_PREFIX+"ballon.stop";
+  public static final double DEFAULT_RATIO_STOP_BALLON_LIMIT=0.9;
+  
+  /** Ratio for the highest priority(usually the first running) container to ballon*/
+  public static final String RATIO_CONTAINER_BALLON=NM_PREFIX+"ballon.ratio";
+  public static final double DEFAULT_RATIO_CONTAINER_BALLON = 0.1;
+  
+  /**Ratio of memory of NM_PMEM_MB that shoud reclaim memory for overprovisioned conainers*/
+  public static final String RATIO_RECLAIM_BALLOON_LIMIT=NM_PREFIX+"ballon.reclaim";
+  public static final double DEFAULT_RATIO__RECLAIM_BALLOON_LIMIT=0.95;
+  
   /** Specifies whether physical memory check is enabled. */
   public static final String NM_PMEM_CHECK_ENABLED = NM_PREFIX
       + "pmem-check-enabled";

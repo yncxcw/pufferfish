@@ -365,7 +365,7 @@ public class RMAppImpl implements RMApp, Recoverable {
       ApplicationSubmissionContext submissionContext, YarnScheduler scheduler,
       ApplicationMasterService masterService, long submitTime,
       String applicationType, Set<String> applicationTags, 
-      ResourceRequest amReq) {
+      ResourceRequest amReq,boolean isFlexibleREquest) {
 
     this.systemClock = new SystemClock();
 
@@ -387,10 +387,12 @@ public class RMAppImpl implements RMApp, Recoverable {
     this.amReq = amReq;
     //TODO we will initialize the flexible allocation later
     //by ApplicationSubmissionContext.nodeLableExpression
-    if(submissionContext.getNodeLabelExpression()=="flex"){
+    if(isFlexibleREquest){
        this.isFlexibleAllocation=true;
+       LOG.info("app fex");
     }else{
        this.isFlexibleAllocation=false;
+       LOG.info("app not flex");
     }
 
     int globalMaxAppAttempts = conf.getInt(YarnConfiguration.RM_AM_MAX_ATTEMPTS,

@@ -377,7 +377,6 @@ public class ResourceTrackerService extends AbstractService implements
       		continue;
       	}
       	if(app.getIsFlexibleAllocation()){
-      	LOG.info("add flexible applications:  "+app.getApplicationId().toString());
       	flexibleApps.add(app.getApplicationId());
       	}
     }

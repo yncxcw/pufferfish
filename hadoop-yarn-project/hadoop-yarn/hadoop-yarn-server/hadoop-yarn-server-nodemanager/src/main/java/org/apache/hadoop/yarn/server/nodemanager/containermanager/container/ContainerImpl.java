@@ -132,11 +132,13 @@ public class ContainerImpl implements Container {
   // whether container was marked as killed after recovery
   private boolean recoveredAsKilled = false;
   private Context context;
+  
+  private boolean isFlexible;
 
   public ContainerImpl(Configuration conf, Dispatcher dispatcher,
       ContainerLaunchContext launchContext, Credentials creds,
       NodeManagerMetrics metrics,
-      ContainerTokenIdentifier containerTokenIdentifier, Context context) {
+      ContainerTokenIdentifier containerTokenIdentifier, Context context,boolean isFlexible) {
     this.daemonConf = conf;
     this.dispatcher = dispatcher;
     this.stateStore = context.getNMStateStore();
@@ -152,8 +154,9 @@ public class ContainerImpl implements Container {
     this.readLock = readWriteLock.readLock();
     this.writeLock = readWriteLock.writeLock();
     this.context = context;
-    this.containerMonitor = new ContainerMonitor();
-
+    this.isFlexible=isFlexible;
+    this.containerMonitor = new ContainerMonitor(isFlexible);
+    
     stateMachine = stateMachineFactory.make(this);
   }
 
@@ -165,7 +168,7 @@ public class ContainerImpl implements Container {
       RecoveredContainerStatus recoveredStatus, int exitCode,
       String diagnostics, boolean wasKilled, Context context) {
     this(conf, dispatcher, launchContext, creds, metrics,
-        containerTokenIdentifier, context);
+        containerTokenIdentifier, context,false);
     this.recoveredStatus = recoveredStatus;
     this.exitCode = exitCode;
     this.recoveredAsKilled = wasKilled;
@@ -575,11 +578,11 @@ public class ContainerImpl implements Container {
 		
 		private String dockerId=null;
 		
-		private int currentConfiguredMemory;
+		private long currentConfiguredMemory;
 		
-		private int currentUsedMemory;
+		private long currentUsedMemory;
 		
-		private int currentUsedSwap;
+		private long currentUsedSwap;
 		
 		private boolean isSwapping;
 		
@@ -590,13 +593,19 @@ public class ContainerImpl implements Container {
 		private int MIN_FOOTPRINT = 256;
 		
 		
-		public ContainerMonitor(){
+		public ContainerMonitor(boolean isFlexible){
 			
 			//YARN container id
 			this.name = containerId.toString();
 			LOG.info("container id:"+this.name);
 			//in terms of M
-			this.currentConfiguredMemory = resource.getMemory();
+			if(isFlexible){
+			//TODO add this value to configure
+			  this.currentConfiguredMemory = 4096;
+			}else{
+			  this.currentConfiguredMemory = resource.getMemory();
+			}
+			LOG.info("initialize configured: "+name+currentConfiguredMemory);
 			this.isSwapping=false;
 			
 		    
@@ -611,14 +620,12 @@ public class ContainerImpl implements Container {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			LOG.info("start launching threads "+name);
 			//get its docker id
 			String[] containerIdCommands={"docker","inspect","--format={{.Id}}",name};
 		    dockerId = runDockerUpdateCommand(containerIdCommands);
 		    //initial the memory path
 		    LOG.info("get dockerId "   +dockerId);
 		    memoryPath= "/sys/fs/cgroup/memory/docker/"+dockerId+"/";
-		    LOG.info("get memory path:"+memoryPath);
 		    
 			isRunning = true;
 			while(stateMachine.getCurrentState() == ContainerState.RUNNING){
@@ -627,11 +634,17 @@ public class ContainerImpl implements Container {
 				//get current used swap
 				getCurrentUsedSwap();
 				//if used memory+swap > configured and swap > threadshhod
+				
 				if(currentUsedMemory+currentUsedSwap>currentConfiguredMemory
-					&& currentUsedSwap > 500){
+					&& currentUsedSwap > 100){
 				   if(!isSwapping){
 					 DockerCommandCpuQuota(1000);
 					 isSwapping  = true;
+					 LOG.info(name+"is swapping");
+					 LOG.info(name+"currentUsed: "+currentUsedMemory);
+					 LOG.info(name+"currentUsedSwap: "+currentUsedSwap);
+					 LOG.info(name+"currentConfiguredMemory: "+currentConfiguredMemory);
+						
 				   }
 				   
 				  
@@ -663,7 +676,7 @@ public class ContainerImpl implements Container {
 	
 		private void updateConfiguredMemory(){
 			
-	        int limitedMemory = getCurrentLimitedMemory();
+	        long limitedMemory = getCurrentLimitedMemory();
 	        
 	        LOG.info("container: "+containerId.toString()+" old: "+limitedMemory
 	        		 +"new: "+currentConfiguredMemory);
@@ -696,7 +709,7 @@ public class ContainerImpl implements Container {
 			  this.runDockerUpdateCommand(commandArrayQuota);
 			  
 		  }
-		 private void DockerCommandMemory(Integer memory){
+		 private void DockerCommandMemory(Long memory){
 			  List<String> commandPrefix = new ArrayList<String>();
 			  commandPrefix.add("docker");
 			  commandPrefix.add("update");
@@ -713,30 +726,30 @@ public class ContainerImpl implements Container {
 		
 		
 		//pull by monitor, in termes of M
-		private int getCurrentLimitedMemory(){
+		private long getCurrentLimitedMemory(){
 			if(!isRunning)
 				return 0;
 			String path=memoryPath+"memory.limit_in_bytes";
-			int limitedMemory = Integer.parseInt(readFileLines(path).get(0))/(1024*1024);
+			long limitedMemory = Long.parseLong(readFileLines(path).get(0))/(1024*1024);
 			//LOG.info("get limited memory:"+name+"  "+limitedMemory);
 			return limitedMemory;
 		}
 		
 		//pulled by nodemanager, in termes of M
-		private int getCurrentUsedSwap(){
+		private long getCurrentUsedSwap(){
 			if(!isRunning)
 				return 0;
 			String path=memoryPath+"memory.stat";
 			String SwapString=readFileLines(path).get(6);
 			String SwapString1=SwapString.split("\\s++")[1];
-			currentUsedSwap=Integer.parseInt(SwapString1)/(1024*1024);
+			currentUsedSwap=Long.parseLong(SwapString1)/(1024*1024);
 			//LOG.info("get swap memory:"+name+"  "+currentUsedSwap);
 			return currentUsedSwap;
 		}
 				
 		
 		//pulled by nodemanager, in termes of M
-		public int getCurrentUsedMemory(){
+		public long getCurrentUsedMemory(){
 			if(!isRunning)
 				return 0;
 			String path=memoryPath+"memory.usage_in_bytes";
@@ -745,12 +758,12 @@ public class ContainerImpl implements Container {
 			return currentUsedMemory;
 		}
 		
-		public void setConfiguredMemory(int configuredMemory){
+		public void setConfiguredMemory(long configuredMemory){
 			currentConfiguredMemory = configuredMemory;
 			isUpdated=true;
 		}
 		
-		public int getConfiguredMemory(){
+		public long getConfiguredMemory(){
 			return currentConfiguredMemory;
 		}
 		
@@ -763,12 +776,13 @@ public class ContainerImpl implements Container {
 		
 		//recalim $claimSize MB memory from used container
 		//usually called when this container is swapping
+		//as much as its original allocated memory
 		//@return how much memory is reclaimed
-		public int reclaimMemory(int claimSize){
+		public long reclaimMemory(int claimSize){
 		    if(!isRunning)
 		    	return -1;
-		    int left=Math.min(MIN_FOOTPRINT,currentUsedMemory-claimSize);
-		    int reclaimed=currentUsedMemory-left;
+		    long left=Math.min(getResource().getMemory(),currentUsedMemory-claimSize);
+		    long reclaimed=currentUsedMemory-left;
 		    currentConfiguredMemory=left;
 		    isUpdated=true;
 		    return reclaimed;
@@ -816,7 +830,7 @@ public class ContainerImpl implements Container {
 			ArrayList<String> results= new ArrayList<String>();
 			File file = new File(path);
 		    BufferedReader reader = null;
-		    LOG.info("try to read"+path);
+		    //LOG.info("try to read"+path);
 		    try {
 		        reader = new BufferedReader(new FileReader(file));
 		        String tempString = null;
