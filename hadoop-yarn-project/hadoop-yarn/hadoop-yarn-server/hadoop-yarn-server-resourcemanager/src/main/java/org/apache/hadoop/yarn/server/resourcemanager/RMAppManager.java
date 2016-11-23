@@ -328,8 +328,9 @@ public class RMAppManager implements EventHandler<RMAppManagerEvent>,
     ApplicationId applicationId = submissionContext.getApplicationId();
     
     boolean isFlex=false;
-    
-    if(submissionContext.getAMContainerResourceRequest().
+      
+    if(submissionContext.getAMContainerResourceRequest()!=null&&
+       submissionContext.getAMContainerResourceRequest().
             getNodeLabelExpression()!=null){
     
     String[] amNodeLabel=submissionContext.getAMContainerResourceRequest().
@@ -338,7 +339,6 @@ public class RMAppManager implements EventHandler<RMAppManagerEvent>,
    
     
     if(amNodeLabel.length==1){
-    	LOG.info(amNodeLabel[0]);
     	//either only flex
     	if(amNodeLabel[0].equals("flex")){
     		submissionContext.getAMContainerResourceRequest().
