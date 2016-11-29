@@ -77,16 +77,6 @@ public class MockApp implements Application {
 
   public void handle(ApplicationEvent event) {}
 
-@Override
-public boolean getIsFlexible() {
-	// TODO Auto-generated method stub
-	return false;
-}
 
-@Override
-public void setIsFlexible(boolean flexible) {
-	// TODO Auto-generated method stub
-	
-}
 
 }

@@ -153,4 +153,18 @@ public long getLaunchStartTime() {
 	// TODO Auto-generated method stub
 	return 0;
 }
+
+@Override
+public void setFlexible() {
+	// TODO Auto-generated method stub
+	
+}
+
+@Override
+public boolean isFlexble() {
+	// TODO Auto-generated method stub
+	return false;
+}
+
+
 }
