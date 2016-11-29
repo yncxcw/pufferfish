@@ -58,6 +58,8 @@ public interface Container extends EventHandler<ContainerEvent> {
   
   void setFlexible();
   
+  boolean isFlexble();
+  
   ContainerMonitor getContainerMonitor();
   
   long getLaunchStartTime();

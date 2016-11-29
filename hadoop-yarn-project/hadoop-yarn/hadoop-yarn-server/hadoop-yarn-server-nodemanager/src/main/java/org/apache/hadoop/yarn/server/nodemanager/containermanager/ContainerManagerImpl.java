@@ -836,11 +836,13 @@ public class ContainerManagerImpl extends CompositeService implements
         new ContainerImpl(getConfig(), this.dispatcher,
             launchContext, credentials, metrics, containerTokenIdentifier,
             context);
-    //Try to allocate memory from memory manager
-    int requestMemory=container.getResource().getMemory();
-    context.getNodeMemoryManager().MemoryReclaim(requestMemory);
-    LOG.info("try to reclaim memory for new container: "+container.getContainerId().toString());
     
+    //must not be am container
+    if(context.getCachedFlexApplication().contains(applicationID) && 
+    		!containerId.toString().endsWith("000001")){
+    	LOG.info(containerId+" set to be flexible");
+    	container.setFlexible();
+    }
     
     if (context.getContainers().putIfAbsent(containerId, container) != null) {
       NMAuditLogger.logFailure(user, AuditConstants.START_CONTAINER,
@@ -871,6 +873,11 @@ public class ContainerManagerImpl extends CompositeService implements
               logAggregationContext));
         }
 
+        //Try to allocate memory from memory manager
+        int requestMemory=container.getResource().getMemory();
+        context.getNodeMemoryManager().MemoryReclaim(requestMemory);
+        LOG.info("try to reclaim memory for new container: "+container.getContainerId().toString());
+        
         this.context.getNMStateStore().storeContainer(containerId, request);
         dispatcher.getEventHandler().handle(
           new ApplicationContainerInitEvent(container));

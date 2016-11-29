@@ -20,7 +20,9 @@ package org.apache.hadoop.yarn.server.nodemanager;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -347,6 +349,9 @@ public class NodeManager extends CompositeService
 
     protected final ConcurrentMap<ContainerId, Container> containers =
         new ConcurrentSkipListMap<ContainerId, Container>();
+    
+    protected final Set<ApplicationId> cachedFlexApplication=
+    		new HashSet<ApplicationId>();
 
     private final NMContainerTokenSecretManager containerTokenSecretManager;
     private final NMTokenSecretManagerInNM nmTokenSecretManager;
@@ -480,6 +485,12 @@ public class NodeManager extends CompositeService
     public void setNodeStatusUpdater(NodeStatusUpdater nodeStatusUpdater) {
       this.nodeStatusUpdater = nodeStatusUpdater;
     }
+
+	@Override
+	public Set<ApplicationId> getCachedFlexApplication() {
+		
+		return this.cachedFlexApplication;
+	}
   }
 
 

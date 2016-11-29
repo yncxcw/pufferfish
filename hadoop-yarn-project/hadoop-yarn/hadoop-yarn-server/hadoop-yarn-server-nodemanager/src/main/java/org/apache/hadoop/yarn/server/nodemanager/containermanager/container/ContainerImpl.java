@@ -180,6 +180,11 @@ public class ContainerImpl implements Container {
 	  this.isFlexible = true;
   }
   
+  @Override
+  public boolean isFlexble(){
+	  return this.isFlexible;
+  }
+  
   private static final ContainerDiagnosticsUpdateTransition UPDATE_DIAGNOSTICS_TRANSITION =
       new ContainerDiagnosticsUpdateTransition();
 
@@ -636,13 +641,15 @@ public class ContainerImpl implements Container {
 		    
 			isRunning = true;
 			while(stateMachine.getCurrentState() == ContainerState.RUNNING && isRunning){
+				
+				getCurrentLimitedMemory();
 				//get current used memory
 				getCurrentUsedMemory();
 				//get current used swap
 				getCurrentUsedSwap();
 				//if used memory+swap > configured and swap > threadshhod
 				
-				if(currentUsedMemory+currentUsedSwap>currentConfiguredMemory
+				if(currentUsedMemory+currentUsedSwap>limitedMemory
 					&& currentUsedSwap > 100){
 				   if(!isSwapping){
 					 DockerCommandCpuQuota(1000);
@@ -690,7 +697,11 @@ public class ContainerImpl implements Container {
 	        
 	        if(currentConfiguredMemory > limitedMemory){
 	        	DockerCommandMemory(currentConfiguredMemory);
+	        	//whatever we open cpu here
+	        	DockerCommandCpuQuota(-1);
 	        }else{
+	        	//whatever we throttle cpu here
+	        	DockerCommandCpuQuota(1000);
 	        	while(currentConfiguredMemory < limitedMemory){
 	        		limitedMemory = limitedMemory - 1024;
 	        		if(limitedMemory<0){
@@ -733,7 +744,7 @@ public class ContainerImpl implements Container {
 		
 		
 		//pull by monitor, in termes of M
-		private long getCurrentLimitedMemory(){
+		public long getCurrentLimitedMemory(){
 			if(!isRunning)
 				return 0;
 			String path=memoryPath+"memory.limit_in_bytes";
@@ -779,9 +790,6 @@ public class ContainerImpl implements Container {
 			isUpdated=true;
 		}
 		
-		public long getConfiguredMemory(){
-			return currentConfiguredMemory;
-		}
 		
 		//pulled by nodemanager
 		public boolean getIsSwapping(){

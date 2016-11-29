@@ -654,12 +654,18 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
             //get flexible applications on this node.
             List<ApplicationId> flexibleApplications=
             	response.getFlexibleApplications();
-            //set this applications flexible
+            //set flexibleapp to cached
+            Set<ApplicationId> cachedFlexApplications=context.getCachedFlexApplication();
             for(ApplicationId appId:flexibleApplications){
-            	Application application=(Application)context.getApplications().get(appId);
-                if(application!=null){
-                   application.setIsFlexible(true);	
-                }
+            	cachedFlexApplications.add(appId);
+            }
+            //remove out of date cahced flexappid
+            Iterator<ApplicationId> ite=cachedFlexApplications.iterator();
+            while(ite.hasNext()){
+            	ApplicationId appId=ite.next();
+            	if(!flexibleApplications.contains(appId)){
+            		ite.remove();
+            	}
             }
             
             //Only start tracking for keepAlive on FINISH_APP

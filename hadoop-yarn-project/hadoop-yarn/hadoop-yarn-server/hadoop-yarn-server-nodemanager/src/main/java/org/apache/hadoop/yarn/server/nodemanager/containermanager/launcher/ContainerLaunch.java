@@ -126,12 +126,6 @@ public class ContainerLaunch implements Callable<Integer> {
     this.maxKillWaitTime =
         conf.getLong(YarnConfiguration.NM_PROCESS_KILL_WAIT_MS,
             YarnConfiguration.DEFAULT_NM_PROCESS_KILL_WAIT_MS);
-    
-    if(app.getIsFlexible()){
-    	exec.setIsFlexible(true);
-    }else{
-    	exec.setIsFlexible(false);
-    }
   }
 
   @VisibleForTesting

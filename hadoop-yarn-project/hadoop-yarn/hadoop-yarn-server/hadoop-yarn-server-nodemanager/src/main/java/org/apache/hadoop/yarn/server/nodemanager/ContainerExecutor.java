@@ -62,17 +62,11 @@ public abstract class ContainerExecutor implements Configurable {
       new ConcurrentHashMap<ContainerId, Path>();
   
   
-  protected boolean isFlexible=false; 
-
   private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
   private final ReadLock readLock = lock.readLock();
   private final WriteLock writeLock = lock.writeLock();
 
-  
-  public void setIsFlexible(boolean flexible){
-	  this.isFlexible = flexible;
-  }
-  
+
   @Override
   public void setConf(Configuration conf) {
     this.conf = conf;

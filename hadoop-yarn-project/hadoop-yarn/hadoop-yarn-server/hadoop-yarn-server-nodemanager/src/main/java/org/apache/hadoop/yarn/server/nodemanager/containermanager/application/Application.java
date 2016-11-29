@@ -33,10 +33,6 @@ public interface Application extends EventHandler<ApplicationEvent> {
 
   ApplicationId getAppId();
   
-  boolean getIsFlexible();
-  
-  void setIsFlexible(boolean flexible);
-
   ApplicationState getApplicationState();
 
 }

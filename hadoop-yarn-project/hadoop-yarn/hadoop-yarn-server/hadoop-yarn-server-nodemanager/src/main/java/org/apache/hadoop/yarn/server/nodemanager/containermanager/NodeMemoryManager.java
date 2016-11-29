@@ -115,16 +115,11 @@ public class NodeMemoryManager {
 			 //update contaienr memory usage map
 			 containerToMemoryUsage.put(containerId, currentUsed);
 			 //add to swapping group
-			 if(container.getContainerMonitor().getIsSwapping()){
-				Application app = (Application) context.getApplications().get(
-                         container.getContainerId().
-                         getApplicationAttemptId().
-                         getApplicationId()
-                         );
-               if(app.getIsFlexible()){
-            	   LOG.info("add swapping container"+container.getContainerId());
+			 if(container.getContainerMonitor().getIsSwapping() && container.isFlexble()){
+			
+                   LOG.info("add swapping container"+container.getContainerId());
             	   swappingContainer.add(container); 
-                }
+                
 			 }
 			 nodeCurrentUsed+=currentUsed;
 		 }
@@ -154,8 +149,8 @@ public class NodeMemoryManager {
 		 //earliest balloon first
 		  for(Container cnt : swappingContainer){
 			    //compute new memory after balloon
-			    int newMemory    = (int) (cnt.getContainerMonitor().getConfiguredMemory()*balloonRatio);
-			    long newCntMemory = cnt.getContainerMonitor().getConfiguredMemory()+newMemory;
+			    int newMemory    = (int) (cnt.getContainerMonitor().getCurrentLimitedMemory()*balloonRatio);
+			    long newCntMemory = cnt.getContainerMonitor().getCurrentLimitedMemory()+newMemory;
 			    int currentUsage = nodeCurrentUsed+newMemory;
 			    if(currentUsage*1.0/nodeTotal*1.0 > STOP_BALLOON_LIMIT){
 			    	break;

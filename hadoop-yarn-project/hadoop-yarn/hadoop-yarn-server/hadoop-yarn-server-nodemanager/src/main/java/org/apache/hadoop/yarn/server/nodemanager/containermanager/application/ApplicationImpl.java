@@ -72,7 +72,7 @@ public class ApplicationImpl implements Application {
   private final ReadLock readLock;
   private final WriteLock writeLock;
   private final Context context;
-  private boolean isFlexible;
+ 
 
   private static final Log LOG = LogFactory.getLog(ApplicationImpl.class);
 
@@ -89,39 +89,13 @@ public class ApplicationImpl implements Application {
     this.credentials = credentials;
     this.aclsManager = context.getApplicationACLsManager();
     this.context = context;
-    this.isFlexible = false;
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     readLock = lock.readLock();
     writeLock = lock.writeLock();
     stateMachine = stateMachineFactory.make(this);
   }
   
-  @Override
-  public boolean getIsFlexible(){
-	this.readLock.lock();
-	  try { 
-	  return this.isFlexible;
-	  }finally{
-		  this.readLock.unlock();
-	  }
-  }
-  
-  @Override
-  public void setIsFlexible(boolean flexible){
-	 this.writeLock.lock();
-	 try{
-	  this.isFlexible= flexible;
-	  for(Container cnt:containers.values()){
-		  //we skip am container
-		  if(!cnt.getContainerId().toString().endsWith("000001")){
-			  cnt.setFlexible();
-		  }
-		  
-	  }
-	 }finally{
-		 this.writeLock.unlock();
-	 }
-  }
+
 
   @Override
   public String getUser() {

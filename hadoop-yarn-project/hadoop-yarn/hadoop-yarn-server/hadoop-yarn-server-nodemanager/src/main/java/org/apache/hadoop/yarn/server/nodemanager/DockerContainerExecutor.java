@@ -198,7 +198,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
     String memory;
     int staticMemory = getConf().getInt(YarnConfiguration.STATIC_CONTAINER_MEM_SIZE, 
     		                            YarnConfiguration.DEFAULT_STATIC_CONTAINER_MEM_SIZE);
-    if(isFlexible && !container.getContainerId().toString().endsWith("000001")){
+    if(container.isFlexble()){
     	//TODO we can do it as a configuration
     	 LOG.info("launch a flexible and nonam-conainer");
          memory = Integer.toString(staticMemory); 

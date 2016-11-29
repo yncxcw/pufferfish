@@ -19,6 +19,7 @@
 package org.apache.hadoop.yarn.server.nodemanager;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.hadoop.security.Credentials;
@@ -82,5 +83,8 @@ public interface Context {
   NodeStatusUpdater getNodeStatusUpdater();
   
   NodeMemoryManager getNodeMemoryManager();
+  
+  Set<ApplicationId> getCachedFlexApplication();
+  
   
 }
