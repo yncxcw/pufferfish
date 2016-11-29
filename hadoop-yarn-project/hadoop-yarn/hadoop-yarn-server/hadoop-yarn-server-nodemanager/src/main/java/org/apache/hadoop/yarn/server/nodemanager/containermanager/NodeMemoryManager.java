@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -94,9 +95,12 @@ public class NodeMemoryManager {
 		 Set<ContainerId> containerIds    = this.context.getContainers().keySet();
 		 List<Container>  swappingContainer= new ArrayList<Container>();
 		 //we delete out of date containercontainerToMemoryUsage
-		 for(ContainerId containerId : this.containerToMemoryUsage.keySet()){
-			 if(!containerIds.contains(containerId)){
-				 this.containerToMemoryUsage.remove(containerId);
+		 Iterator<Entry<ContainerId, Long>> it = this.containerToMemoryUsage.entrySet().iterator();
+		 
+		 while(it.hasNext()){
+			 Map.Entry<ContainerId, Long> entry=it.next();
+			 if(!containerIds.contains(entry.getKey())){
+				 it.remove();
 			 }
 		 }
 		

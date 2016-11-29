@@ -353,6 +353,7 @@ public class ContainersMonitorImpl extends AbstractService implements
     @Override
     public void run() {
 
+      LOG.info("container monitor started");
       while (true) {
 
         // Print the processTrees for debugging.
@@ -550,6 +551,8 @@ public class ContainersMonitorImpl extends AbstractService implements
           break;
         }
       }
+      
+      LOG.info("container monitor ends");
     }
 
     private String formatErrorMessage(String memTypeExceeded,

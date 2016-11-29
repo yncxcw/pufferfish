@@ -583,6 +583,8 @@ public class ContainerImpl implements Container {
 		private long currentUsedMemory;
 		
 		private long currentUsedSwap;
+
+		private long limitedMemory;
 		
 		private boolean isSwapping;
 		
@@ -628,7 +630,7 @@ public class ContainerImpl implements Container {
 		    memoryPath= "/sys/fs/cgroup/memory/docker/"+dockerId+"/";
 		    
 			isRunning = true;
-			while(stateMachine.getCurrentState() == ContainerState.RUNNING){
+			while(stateMachine.getCurrentState() == ContainerState.RUNNING && isRunning){
 				//get current used memory
 				getCurrentUsedMemory();
 				//get current used swap
@@ -730,8 +732,11 @@ public class ContainerImpl implements Container {
 			if(!isRunning)
 				return 0;
 			String path=memoryPath+"memory.limit_in_bytes";
-			long limitedMemory = Long.parseLong(readFileLines(path).get(0))/(1024*1024);
+			List<String> readlines=readFileLines(path);
+			if(readlines!=null){
+			  limitedMemory = Long.parseLong(readFileLines(path).get(0))/(1024*1024);
 			//LOG.info("get limited memory:"+name+"  "+limitedMemory);
+			}
 			return limitedMemory;
 		}
 		
@@ -740,10 +745,13 @@ public class ContainerImpl implements Container {
 			if(!isRunning)
 				return 0;
 			String path=memoryPath+"memory.stat";
-			String SwapString=readFileLines(path).get(6);
+			List<String> readlines=readFileLines(path);
+			if(readlines!=null){
+			String SwapString=readlines.get(6);
 			String SwapString1=SwapString.split("\\s++")[1];
 			currentUsedSwap=Long.parseLong(SwapString1)/(1024*1024);
 			//LOG.info("get swap memory:"+name+"  "+currentUsedSwap);
+			}
 			return currentUsedSwap;
 		}
 				
@@ -753,8 +761,11 @@ public class ContainerImpl implements Container {
 			if(!isRunning)
 				return 0;
 			String path=memoryPath+"memory.usage_in_bytes";
-			currentUsedMemory=(int)(Long.parseLong(readFileLines(path).get(0))/(1024*1024));
+			List<String> readlines=readFileLines(path);
+			if(readlines!=null){
+			currentUsedMemory=(int)(Long.parseLong(readlines.get(0))/(1024*1024));
 			//LOG.info("get used memory:"+name+"  "+currentUsedMemory);
+			}
 			return currentUsedMemory;
 		}
 		
@@ -780,7 +791,9 @@ public class ContainerImpl implements Container {
 		//@return how much memory is reclaimed
 		public long reclaimMemory(int claimSize){
 		    if(!isRunning)
-		    	return -1;
+		    	//TODO this is tricky, we should return current used to show that
+		    	//all memory is released
+		    	return currentUsedMemory;
 		    long left=Math.min(getResource().getMemory(),currentUsedMemory-claimSize);
 		    long reclaimed=currentUsedMemory-left;
 		    currentConfiguredMemory=left;
@@ -830,6 +843,7 @@ public class ContainerImpl implements Container {
 			ArrayList<String> results= new ArrayList<String>();
 			File file = new File(path);
 		    BufferedReader reader = null;
+		    boolean isError=false;
 		    //LOG.info("try to read"+path);
 		    try {
 		        reader = new BufferedReader(new FileReader(file));
@@ -842,6 +856,14 @@ public class ContainerImpl implements Container {
 		            reader.close();
 		        } catch (IOException e) {
 		        	LOG.info("file error: "+e.toString());
+		        	//if we come to here, then means read file causes errors;
+		        	//if reports this errors mission errors, it means this containers
+		        	//has terminated, but nodemanger did not delete it yet. we stop monitoring
+		        	//here
+		        	if(e.toString().contains("FileNotFoundException")){
+		        	  isRunning=false;	
+		        	}
+		        	isError=true;
 		        } finally {
 		            if (reader != null) {
 		                try {
@@ -850,8 +872,12 @@ public class ContainerImpl implements Container {
 		                }
 		            }
 		        }
-			
+		    
+			if(!isError){
 			return results;
+			}else{
+		    return null;
+			}
 		}
 	}
   
