@@ -653,12 +653,7 @@ public class ContainerImpl implements Container {
 					&& currentUsedSwap > 100){
 				   if(!isSwapping){
 					 DockerCommandCpuQuota(1000);
-					 isSwapping  = true;
-					 LOG.info(name+"is swapping");
-					 LOG.info(name+"currentUsed: "+currentUsedMemory);
-					 LOG.info(name+"currentUsedSwap: "+currentUsedSwap);
-					 LOG.info(name+"currentConfiguredMemory: "+currentConfiguredMemory);
-						
+					 isSwapping  = true;	
 				   }
 				   
 				  
