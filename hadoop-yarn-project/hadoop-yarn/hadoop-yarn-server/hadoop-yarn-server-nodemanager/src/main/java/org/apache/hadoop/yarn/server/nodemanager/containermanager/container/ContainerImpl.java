@@ -586,6 +586,8 @@ public class ContainerImpl implements Container {
 
 		private String name;
 		
+		private String app;
+		
 		private String dockerId=null;
 		
 		private long currentConfiguredMemory;
@@ -609,6 +611,7 @@ public class ContainerImpl implements Container {
 			
 			//YARN container id
 			this.name = containerId.toString();
+			this.app  = containerId.getApplicationAttemptId().getApplicationId().toString();
 			LOG.info("container id:"+this.name);
 			//in terms of M
 			if(isFlexible){
@@ -671,6 +674,9 @@ public class ContainerImpl implements Container {
 				   updateConfiguredMemory();  	
 				  isUpdated=false;	
 				}
+				
+				
+				LOG.info("###"+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"$$$");
 				
 				//if we come here it means we need to sleep for 2s
 				 try {
