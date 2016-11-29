@@ -832,24 +832,10 @@ public class ContainerManagerImpl extends CompositeService implements
 
     ApplicationId applicationID =
             containerId.getApplicationAttemptId().getApplicationId();
-    Container container;
-    if(context.getApplications().get(applicationID)!=null && 
-       context.getApplications().get(applicationID).getIsFlexible()){
-     //it can not be an am container or a flexible container
-     //firt contaienr must be an am container
-     container=
+    Container container=
         new ContainerImpl(getConfig(), this.dispatcher,
             launchContext, credentials, metrics, containerTokenIdentifier,
-            context,true);
-     LOG.info("set container "+container.getContainerId()+" to be flexible");
-    }else{
-    container =
-    	new ContainerImpl(getConfig(), this.dispatcher,
-    	    launchContext, credentials, metrics, containerTokenIdentifier,
-    	    context,false);	
-     LOG.info("set container "+container.getContainerId()+" to be normal");
-    }
-   
+            context);
     //Try to allocate memory from memory manager
     int requestMemory=container.getResource().getMemory();
     context.getNodeMemoryManager().MemoryReclaim(requestMemory);

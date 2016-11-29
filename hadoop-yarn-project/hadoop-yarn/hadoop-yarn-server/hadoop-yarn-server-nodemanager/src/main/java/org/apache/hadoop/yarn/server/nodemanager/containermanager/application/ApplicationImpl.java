@@ -111,6 +111,13 @@ public class ApplicationImpl implements Application {
 	 this.writeLock.lock();
 	 try{
 	  this.isFlexible= flexible;
+	  for(Container cnt:containers.values()){
+		  //we skip am container
+		  if(!cnt.getContainerId().toString().endsWith("000001")){
+			  cnt.setFlexible();
+		  }
+		  
+	  }
 	 }finally{
 		 this.writeLock.unlock();
 	 }

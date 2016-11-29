@@ -138,7 +138,7 @@ public class ContainerImpl implements Container {
   public ContainerImpl(Configuration conf, Dispatcher dispatcher,
       ContainerLaunchContext launchContext, Credentials creds,
       NodeManagerMetrics metrics,
-      ContainerTokenIdentifier containerTokenIdentifier, Context context,boolean isFlexible) {
+      ContainerTokenIdentifier containerTokenIdentifier, Context context) {
     this.daemonConf = conf;
     this.dispatcher = dispatcher;
     this.stateStore = context.getNMStateStore();
@@ -154,7 +154,7 @@ public class ContainerImpl implements Container {
     this.readLock = readWriteLock.readLock();
     this.writeLock = readWriteLock.writeLock();
     this.context = context;
-    this.isFlexible=isFlexible;
+    this.isFlexible=false;
     this.containerMonitor = new ContainerMonitor(isFlexible);
     
     stateMachine = stateMachineFactory.make(this);
@@ -168,13 +168,18 @@ public class ContainerImpl implements Container {
       RecoveredContainerStatus recoveredStatus, int exitCode,
       String diagnostics, boolean wasKilled, Context context) {
     this(conf, dispatcher, launchContext, creds, metrics,
-        containerTokenIdentifier, context,false);
+        containerTokenIdentifier, context);
     this.recoveredStatus = recoveredStatus;
     this.exitCode = exitCode;
     this.recoveredAsKilled = wasKilled;
     this.diagnostics.append(diagnostics);
   }
 
+  @Override
+  public void setFlexible(){
+	  this.isFlexible = true;
+  }
+  
   private static final ContainerDiagnosticsUpdateTransition UPDATE_DIAGNOSTICS_TRANSITION =
       new ContainerDiagnosticsUpdateTransition();
 
@@ -803,6 +808,10 @@ public class ContainerImpl implements Container {
 		
 		
 		private String runDockerUpdateCommand(String[] command){
+			//do nothing, if this container is not flexible 
+			if(!isFlexible){
+				 return null;
+			 }
 			 String commandString=new String();
 			 for(String c : command){
 				 commandString += c;

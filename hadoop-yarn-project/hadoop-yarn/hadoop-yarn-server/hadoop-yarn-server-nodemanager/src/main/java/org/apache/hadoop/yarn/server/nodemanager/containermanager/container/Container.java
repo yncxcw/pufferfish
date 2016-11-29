@@ -56,6 +56,8 @@ public interface Container extends EventHandler<ContainerEvent> {
 
   String toString();
   
+  void setFlexible();
+  
   ContainerMonitor getContainerMonitor();
   
   long getLaunchStartTime();

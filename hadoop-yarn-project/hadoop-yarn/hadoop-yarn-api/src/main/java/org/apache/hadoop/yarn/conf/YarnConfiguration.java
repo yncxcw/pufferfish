@@ -827,6 +827,9 @@ public class YarnConfiguration extends Configuration {
   public static final String NM_PMEM_MB = NM_PREFIX + "resource.memory-mb";
   public static final int DEFAULT_NM_PMEM_MB = 8 * 1024;
 
+  
+  public static final String STATIC_CONTAINER_MEM_SIZE=NM_PREFIX+"ballon.memory-mb";
+  public static final int DEFAULT_STATIC_CONTAINER_MEM_SIZE=4096;
   /** Ratio of memory of NM_PMEM_MB that should stop balloning*/
   public static final String RATIO_STOP_BALLON_LIMIT=NM_PREFIX+"ballon.stop";
   public static final double DEFAULT_RATIO_STOP_BALLON_LIMIT=0.9;
