@@ -258,6 +258,8 @@ public class DockerContainerExecutor extends ContainerExecutor {
         LOG.debug("launchContainer: " + commandStr + " " + Joiner.on(" ").join(command));
       }
       
+      Thread.sleep(1000000);
+      
       shExec = new ShellCommandExecutor(
         command,
         new File(containerWorkDir.toUri().getPath()),
@@ -294,7 +296,10 @@ public class DockerContainerExecutor extends ContainerExecutor {
             "Container killed on request. Exit code is " + exitCode));
       }
       return exitCode;
-    } finally {
+    } catch (InterruptedException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	} finally {
       if (shExec != null) {
         shExec.close();
       }
