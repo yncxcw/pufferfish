@@ -322,8 +322,10 @@ public class DockerContainerExecutor extends ContainerExecutor {
 
     if (environment != null) {
       String pwdKey="PWD";
+     
       //we put pwd first
       if(environment.get(pwdKey)!=null){
+    	  LOG.info("find PWD");
     	  sb.env(pwdKey.toString(), environment.get(pwdKey).toString());
     	  environment.remove(pwdKey);
       }
