@@ -321,6 +321,14 @@ public class DockerContainerExecutor extends ContainerExecutor {
     exclusionSet.add(ApplicationConstants.Environment.JAVA_HOME.name());
 
     if (environment != null) {
+      String pwdKey="PWD";
+      //we put pwd first
+      if(environment.get(pwdKey)!=null){
+    	  sb.env(pwdKey.toString(), environment.get(pwdKey).toString());
+    	  environment.remove(pwdKey);
+      }
+     
+      //we put the reset keys
       for (Map.Entry<String,String> env : environment.entrySet()) {
         if (!exclusionSet.contains(env.getKey())) {
           sb.env(env.getKey().toString(), env.getValue().toString());
