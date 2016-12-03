@@ -201,7 +201,10 @@ public class DockerContainerExecutor extends ContainerExecutor {
     if(container.isFlexble()){
     	//TODO we can do it as a configuration
     	 LOG.info("launch a flexible and nonam-conainer");
+    	 if(staticMemory>0)
          memory = Integer.toString(staticMemory); 
+    	 else
+    	 memory = "4096";
     }else{
     	 LOG.info("launch a normal container");
     	 memory =staticMemory > 0 ? Integer.toString(staticMemory):
@@ -258,7 +261,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
         LOG.debug("launchContainer: " + commandStr + " " + Joiner.on(" ").join(command));
       }
       
-      Thread.sleep(1000000);
+      //Thread.sleep(1000000);
       
       shExec = new ShellCommandExecutor(
         command,
@@ -296,10 +299,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
             "Container killed on request. Exit code is " + exitCode));
       }
       return exitCode;
-    } catch (InterruptedException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	} finally {
+    } finally {
       if (shExec != null) {
         shExec.close();
       }

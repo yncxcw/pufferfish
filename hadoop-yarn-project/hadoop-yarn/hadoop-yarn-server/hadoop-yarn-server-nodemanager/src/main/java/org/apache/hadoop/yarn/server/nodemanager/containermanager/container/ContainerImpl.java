@@ -643,6 +643,8 @@ public class ContainerImpl implements Container {
 		    memoryPath= "/sys/fs/cgroup/memory/docker/"+dockerId+"/";
 		    
 			isRunning = true;
+			//int count = 3;
+			//int index = 0;
 			while(stateMachine.getCurrentState() == ContainerState.RUNNING && isRunning){
 				
 				getCurrentLimitedMemory();
@@ -655,16 +657,18 @@ public class ContainerImpl implements Container {
 				if(currentUsedMemory+currentUsedSwap>limitedMemory
 					&& currentUsedSwap > 100){
 				   if(!isSwapping){
+					 //optimize technique to minimize overhead
+					 isSwapping = true;
 					 DockerCommandCpuQuota(1000);
-					 isSwapping  = true;	
 				   }
-				   
-				  
+				     
+					 
+				     
 				}else{
 				   if(isSwapping){
 					 //resume the cpu usage  
-					 DockerCommandCpuQuota(-1);
 					 isSwapping = false;
+					 DockerCommandCpuQuota(-1);
 				   }
 				   
 				}
@@ -716,6 +720,9 @@ public class ContainerImpl implements Container {
 		}
 		
 	    private void DockerCommandCpuQuota(Integer quota){
+	    	  if(!isFlexible){
+	    		  return;
+	    	  }
 			  List<String> commandPrefix = new ArrayList<String>();
 			  commandPrefix.add("docker");
 			  commandPrefix.add("update");
@@ -729,6 +736,9 @@ public class ContainerImpl implements Container {
 			  
 		  }
 		 private void DockerCommandMemory(Long memory){
+			 if(!isFlexible){
+	    		  return;
+	    	  }
 			  List<String> commandPrefix = new ArrayList<String>();
 			  commandPrefix.add("docker");
 			  commandPrefix.add("update");
@@ -818,9 +828,6 @@ public class ContainerImpl implements Container {
 		
 		private String runDockerUpdateCommand(String[] command){
 			//do nothing, if this container is not flexible 
-			if(!isFlexible){
-				 return null;
-			 }
 			 String commandString=new String();
 			 for(String c : command){
 				 commandString += c;
