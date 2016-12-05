@@ -684,7 +684,7 @@ public class ContainerImpl implements Container {
 				
 				//if we come here it means we need to sleep for 2s
 				 try {
-					    Thread.sleep(2000);
+					    Thread.sleep(500);
 					} catch (InterruptedException e) {
 					    e.printStackTrace();
 				 }

@@ -112,6 +112,9 @@ public class ApplicationMasterService extends AbstractService implements
   private final ConcurrentMap<ApplicationAttemptId, AllocateResponseLock> responseMap =
       new ConcurrentHashMap<ApplicationAttemptId, AllocateResponseLock>();
   private final RMContext rmContext;
+  
+  //for flexible allcoation only
+  private int staticMemory;
 
   public ApplicationMasterService(RMContext rmContext, YarnScheduler scheduler) {
     super(ApplicationMasterService.class.getName());
@@ -130,6 +133,9 @@ public class ApplicationMasterService extends AbstractService implements
         YarnConfiguration.RM_SCHEDULER_ADDRESS,
         YarnConfiguration.DEFAULT_RM_SCHEDULER_ADDRESS,
         YarnConfiguration.DEFAULT_RM_SCHEDULER_PORT);
+    
+    this.staticMemory = conf.getInt(YarnConfiguration.STATIC_CONTAINER_MEM_SIZE, 
+            YarnConfiguration.DEFAULT_STATIC_CONTAINER_MEM_SIZE);
 
     Configuration serverConf = conf;
     // If the auth is not-simple, enforce it to be token-based.
@@ -462,6 +468,8 @@ public class ApplicationMasterService extends AbstractService implements
                 + (lastResponse.getResponseId() + 1);
         throw new InvalidApplicationMasterRequestException(message);
       }
+      
+      LOG.info("response id: "+request.getResponseId());
 
       //filter illegal progress values
       float filteredProgress = request.getProgress();
@@ -490,6 +498,7 @@ public class ApplicationMasterService extends AbstractService implements
               blacklistRequest.getBlacklistRemovals() : Collections.EMPTY_LIST;
       RMApp app =
           this.rmContext.getRMApps().get(applicationId);
+     
       
       // set label expression for Resource Requests if resourceName=ANY 
       ApplicationSubmissionContext asc = app.getApplicationSubmissionContext();
@@ -571,6 +580,7 @@ public class ApplicationMasterService extends AbstractService implements
         }
         allocateResponse.setUpdatedNodes(updatedNodeReports);
       }
+ 
 
       allocateResponse.setAllocatedContainers(allocation.getContainers());
       allocateResponse.setCompletedContainersStatuses(appAttempt

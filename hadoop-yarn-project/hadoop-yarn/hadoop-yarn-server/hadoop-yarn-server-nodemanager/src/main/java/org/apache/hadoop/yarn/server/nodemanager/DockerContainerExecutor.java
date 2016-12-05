@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -81,6 +82,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
 
   private final FileContext lfs;
   private final Pattern dockerImagePattern;
+  
 
   public DockerContainerExecutor() {
     try {
@@ -198,18 +200,11 @@ public class DockerContainerExecutor extends ContainerExecutor {
     String memory;
     int staticMemory = getConf().getInt(YarnConfiguration.STATIC_CONTAINER_MEM_SIZE, 
     		                            YarnConfiguration.DEFAULT_STATIC_CONTAINER_MEM_SIZE);
-    if(container.isFlexble()){
-    	//TODO we can do it as a configuration
-    	 LOG.info("launch a flexible and nonam-conainer");
-    	 if(staticMemory>0)
-         memory = Integer.toString(staticMemory); 
-    	 else
-    	 memory = "4096";
-    }else{
-    	 LOG.info("launch a normal container");
-    	 memory =staticMemory > 0 ? Integer.toString(staticMemory):
+
+    //for static container test
+    memory =staticMemory > 0 ? Integer.toString(staticMemory):
     			                    Integer.toString(container.getResource().getMemory());
-    }
+    
 
 
     String localDirMount = toMount(localDirs);
@@ -306,9 +301,11 @@ public class DockerContainerExecutor extends ContainerExecutor {
     }
     return 0;
   }
+  
+  
 
   @Override
-  public void writeLaunchEnv(OutputStream out, Map<String, String> environment, Map<Path, List<String>> resources, List<String> command) throws IOException {
+  public void writeLaunchEnv(Container container, OutputStream out, Map<String, String> environment, Map<Path, List<String>> resources, List<String> command) throws IOException {
     ContainerLaunch.ShellScriptBuilder sb = ContainerLaunch.ShellScriptBuilder.create();
 
     LOG.info("starting write our launch env"); 
@@ -350,6 +347,24 @@ public class DockerContainerExecutor extends ContainerExecutor {
       }
     }
 
+    //we hacked flexible container's 
+    //jvm heap here
+    if(container.isFlexble()){
+    	LOG.info("update jvm heap");
+        int jvmHeap = getConf().getInt(
+        		                       YarnConfiguration.FELXI_CONTAINER_HEAP_SIZE, 
+        		                       YarnConfiguration.DEFAULT_FELXI_CONTAINER_HEAP_SIZE
+        		                      );
+        for(int i=0;i<command.size();i++)
+        {
+        	if(command.get(i).contains("-Xmx")){
+        		LOG.info("find jvm str"+command.get(i));
+        		command.set(i,"-Xmx"+Integer.toString(jvmHeap)+"m");
+        	}
+        }
+    	
+    }
+   
     sb.command(command);
 
     PrintStream pout = null;

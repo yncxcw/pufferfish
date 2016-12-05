@@ -196,6 +196,18 @@ public abstract class MockAsm extends MockApps {
 		// TODO Auto-generated method stub
 		return false;
 	}
+
+	@Override
+	public void cachRequest(ResourceRequest request) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public int getCahcedMemorybyContainer(Container container) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
   }
 
   public static RMApp newApplication(int i) {

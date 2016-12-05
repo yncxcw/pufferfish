@@ -47,9 +47,11 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
 import org.apache.hadoop.yarn.api.records.ApplicationResourceUsageReport;
 import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
+import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.NodeState;
+import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.ReservationId;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.api.records.ResourceRequest;
@@ -144,6 +146,9 @@ public class RMAppImpl implements RMApp, Recoverable {
   private static final AppFinishedTransition FINISHED_TRANSITION =
       new AppFinishedTransition();
   private Set<NodeId> ranNodes = new ConcurrentSkipListSet<NodeId>();
+  
+  //map from Priority to memory, shoud be working for most cases
+  private Map<Priority,Integer> cachedMemoryRequest = new LinkedHashMap<Priority,Integer>();
 
   // These states stored are only valid when app is at killing or final_saving.
   private RMAppState stateBeforeKilling;
@@ -1361,4 +1366,17 @@ public class RMAppImpl implements RMApp, Recoverable {
     }
     return credentials;
   }
+
+@Override
+public void cachRequest(ResourceRequest request) {
+	this.cachedMemoryRequest.put(request.getPriority(), 
+			            request.getCapability().getMemory());
+	
+}
+
+@Override
+public int getCahcedMemorybyContainer(Container container) {
+	
+	return this.cachedMemoryRequest.get(container.getPriority());
+}
 }

@@ -1119,6 +1119,7 @@ public class CapacityScheduler extends
 
     RMContainer reservedContainer = node.getReservedContainer();
     if (reservedContainer != null) {
+      LOG.info("come here 1");
       FiCaSchedulerApp reservedApplication =
           getCurrentAttemptForContainer(reservedContainer.getContainerId());
       
@@ -1140,6 +1141,7 @@ public class CapacityScheduler extends
       RMContainer excessReservation = assignment.getExcessReservation();
       if (excessReservation != null) {
       Container container = excessReservation.getContainer();
+      LOG.info("come here 2");
       queue.completedContainer(
           clusterResource, assignment.getApplication(), node, 
           excessReservation, 
@@ -1471,6 +1473,7 @@ public class CapacityScheduler extends
 
   @Override
   public void killContainer(RMContainer cont) {
+	LOG.info(cont.getContainerId().toString()+" is killed");
     if (LOG.isDebugEnabled()) {
       LOG.debug("KILL_CONTAINER: container" + cont.toString());
     }

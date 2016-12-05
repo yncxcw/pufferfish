@@ -478,6 +478,7 @@ public abstract class AbstractYarnScheduler
   protected void releaseContainers(List<ContainerId> containers,
       SchedulerApplicationAttempt attempt) {
     for (ContainerId containerId : containers) {
+      LOG.info("try to releas container: "+containerId);
       RMContainer rmContainer = getRMContainer(containerId);
       if (rmContainer == null) {
         if (System.currentTimeMillis() - ResourceManager.getClusterTimeStamp()

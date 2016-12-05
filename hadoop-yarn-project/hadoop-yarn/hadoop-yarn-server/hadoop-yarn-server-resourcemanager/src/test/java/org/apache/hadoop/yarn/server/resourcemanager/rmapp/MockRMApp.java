@@ -28,6 +28,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
 import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
+import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.ReservationId;
@@ -276,5 +277,17 @@ public class MockRMApp implements RMApp {
 public boolean getIsFlexibleAllocation() {
 	// TODO Auto-generated method stub
 	return false;
+}
+
+@Override
+public void cachRequest(ResourceRequest request) {
+	// TODO Auto-generated method stub
+	
+}
+
+@Override
+public int getCahcedMemorybyContainer(Container container) {
+	// TODO Auto-generated method stub
+	return 0;
 }
 }

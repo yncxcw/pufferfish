@@ -270,7 +270,7 @@ public class ContainerLaunch implements Callable<Integer> {
         
         // Write out the environment
         LOG.info("write out launch env");
-        exec.writeLaunchEnv(containerScriptOutStream, environment, localResources,
+        exec.writeLaunchEnv(container,containerScriptOutStream, environment, localResources,
             launchContext.getCommands());
         
         // /////////// End of writing out container-script
@@ -570,6 +570,11 @@ public class ContainerLaunch implements Callable<Integer> {
 
     @Override
     public void command(List<String> command) {
+  
+      for(String str : command){
+    	 LOG.info("command: "+str); 
+    	 
+      }
       line("exec /bin/bash -c \"", StringUtils.join(" ", command), "\"");
       errorCheck();
     }

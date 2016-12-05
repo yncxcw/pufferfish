@@ -842,6 +842,12 @@ public class YarnConfiguration extends Configuration {
   public static final String RATIO_RECLAIM_BALLOON_LIMIT=NM_PREFIX+"ballon.reclaim";
   public static final double DEFAULT_RATIO__RECLAIM_BALLOON_LIMIT=0.95;
   
+  /**
+   * jvm heap for flexible container
+   */
+  public static final String FELXI_CONTAINER_HEAP_SIZE=NM_PREFIX+"ballon.jvm-mb";
+  public static final int DEFAULT_FELXI_CONTAINER_HEAP_SIZE=65536;
+  
   /** Specifies whether physical memory check is enabled. */
   public static final String NM_PMEM_CHECK_ENABLED = NM_PREFIX
       + "pmem-check-enabled";
