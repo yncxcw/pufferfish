@@ -570,11 +570,7 @@ public class ContainerLaunch implements Callable<Integer> {
 
     @Override
     public void command(List<String> command) {
-  
-      for(String str : command){
-    	 LOG.info("command: "+str); 
-    	 
-      }
+      LOG.info("command: "+StringUtils.join(" ", command)); 
       line("exec /bin/bash -c \"", StringUtils.join(" ", command), "\"");
       errorCheck();
     }
