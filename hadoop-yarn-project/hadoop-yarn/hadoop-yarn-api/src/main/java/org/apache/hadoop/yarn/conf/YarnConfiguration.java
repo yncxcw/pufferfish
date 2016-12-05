@@ -894,7 +894,7 @@ public class YarnConfiguration extends Configuration {
   /** How often to monitor containers.*/
   public final static String NM_CONTAINER_MON_INTERVAL_MS =
     NM_PREFIX + "container-monitor.interval-ms";
-  public final static int DEFAULT_NM_CONTAINER_MON_INTERVAL_MS = 2000;
+  public final static int DEFAULT_NM_CONTAINER_MON_INTERVAL_MS = 4000;
 
   /** Class that calculates containers current resource utilization.*/
   public static final String NM_CONTAINER_MON_RESOURCE_CALCULATOR =

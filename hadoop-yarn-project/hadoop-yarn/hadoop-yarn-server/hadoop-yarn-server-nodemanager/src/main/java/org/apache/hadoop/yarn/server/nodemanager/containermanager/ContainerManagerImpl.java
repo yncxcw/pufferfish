@@ -842,6 +842,8 @@ public class ContainerManagerImpl extends CompositeService implements
     		!containerId.toString().endsWith("000001")){
     	LOG.info(containerId+" set to be flexible");
     	container.setFlexible();
+    }else{
+    	LOG.info(containerId+" set to be normal");
     }
     
     if (context.getContainers().putIfAbsent(containerId, container) != null) {

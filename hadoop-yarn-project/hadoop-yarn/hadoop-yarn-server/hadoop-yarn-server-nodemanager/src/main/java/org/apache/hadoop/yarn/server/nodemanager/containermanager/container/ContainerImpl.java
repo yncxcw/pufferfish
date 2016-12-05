@@ -630,7 +630,7 @@ public class ContainerImpl implements Container {
 		public void run(){
 			try {
 				//wait untill the container is launched
-				Thread.sleep(10000);
+				Thread.sleep(15000);
 			} catch (InterruptedException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -639,7 +639,7 @@ public class ContainerImpl implements Container {
 			String[] containerIdCommands={"docker","inspect","--format={{.Id}}",name};
 		    dockerId = runDockerUpdateCommand(containerIdCommands);
 		    //initial the memory path
-		    LOG.info("get dockerId "   +dockerId);
+		    LOG.info(name+" get dockerId "+dockerId);
 		    memoryPath= "/sys/fs/cgroup/memory/docker/"+dockerId+"/";
 		    
 			isRunning = true;
@@ -680,7 +680,7 @@ public class ContainerImpl implements Container {
 				}
 				
 				
-				LOG.info("###"+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"$$$");
+				//LOG.info("###"+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"$$$");
 				
 				//if we come here it means we need to sleep for 2s
 				 try {
@@ -797,6 +797,9 @@ public class ContainerImpl implements Container {
 		}
 		
 		public void setConfiguredMemory(long configuredMemory){
+			if(configuredMemory == this.currentConfiguredMemory){
+				return;
+			}
 			currentConfiguredMemory = configuredMemory;
 			isUpdated=true;
 		}

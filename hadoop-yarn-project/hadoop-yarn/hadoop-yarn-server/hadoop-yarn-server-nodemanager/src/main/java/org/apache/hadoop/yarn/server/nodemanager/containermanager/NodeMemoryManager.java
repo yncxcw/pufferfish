@@ -87,7 +87,7 @@ public class NodeMemoryManager {
 	 //called in ContainerMonitor preodically to balloon the contaier out
 	 //of its demand
 	 public void MemoryBalloon(){
-	 LOG.info("memory balloon called");
+	 //LOG.info("memory balloon called");
      try {
 		 this.writeLock.lock();
 		 //recompute current used
@@ -117,7 +117,7 @@ public class NodeMemoryManager {
 			 //add to swapping group
 			 if(container.getContainerMonitor().getIsSwapping() && container.isFlexble()){
 			
-                   LOG.info("add swapping container"+container.getContainerId());
+                   //LOG.info("add swapping container"+container.getContainerId());
             	   swappingContainer.add(container); 
                 
 			 }
@@ -155,7 +155,7 @@ public class NodeMemoryManager {
 			    if(currentUsage*1.0/nodeTotal*1.0 > STOP_BALLOON_LIMIT){
 			    	break;
 			    }
-			    LOG.info("container"+cnt.getContainerId()+" balloon to"+newCntMemory);
+			    LOG.info("### container"+cnt.getContainerId()+"ratio "+balloonRatio+"balloon to"+newCntMemory+"###");
 			    cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
 			    nodeCurrentUsed+=newMemory;
 			    balloonRatio/=2;

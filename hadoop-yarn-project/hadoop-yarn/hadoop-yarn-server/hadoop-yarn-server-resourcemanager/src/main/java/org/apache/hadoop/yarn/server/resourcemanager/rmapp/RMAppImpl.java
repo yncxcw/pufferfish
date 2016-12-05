@@ -394,7 +394,7 @@ public class RMAppImpl implements RMApp, Recoverable {
     //by ApplicationSubmissionContext.nodeLableExpression
     if(isFlexibleREquest){
        this.isFlexibleAllocation=true;
-       LOG.info("app fex");
+       LOG.info("app flex");
     }else{
        this.isFlexibleAllocation=false;
        LOG.info("app not flex");

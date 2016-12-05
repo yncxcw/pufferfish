@@ -657,6 +657,7 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
             //set flexibleapp to cached
             Set<ApplicationId> cachedFlexApplications=context.getCachedFlexApplication();
             for(ApplicationId appId:flexibleApplications){
+            	LOG.info("cache flex app: "+appId);
             	cachedFlexApplications.add(appId);
             }
             //remove out of date cahced flexappid
