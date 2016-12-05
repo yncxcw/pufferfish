@@ -378,6 +378,7 @@ public class ResourceTrackerService extends AbstractService implements
       	}
       	if(app.getIsFlexibleAllocation()){
       	flexibleApps.add(app.getApplicationId());
+      	LOG.info("flex app send: "+app.getApplicationId());
       	}
     }
     // 1. Check if it's a valid (i.e. not excluded) node

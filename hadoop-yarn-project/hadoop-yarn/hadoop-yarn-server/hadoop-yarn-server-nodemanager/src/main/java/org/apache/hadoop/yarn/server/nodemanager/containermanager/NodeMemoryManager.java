@@ -147,6 +147,9 @@ public class NodeMemoryManager {
 		 double balloonRatio = CONTAINER_BALLOON_RATIO;
 		 //If we have available memory, we will choose memory hungry container to balloon
 		 //earliest balloon first
+		  if(swappingContainer.size() > 0){
+		      LOG.info("swapping size: "+swappingContainer.size());
+		  }
 		  for(Container cnt : swappingContainer){
 			    //compute new memory after balloon
 			    int newMemory    = (int) (cnt.getContainerMonitor().getCurrentLimitedMemory()*balloonRatio);
@@ -155,7 +158,7 @@ public class NodeMemoryManager {
 			    if(currentUsage*1.0/nodeTotal*1.0 > STOP_BALLOON_LIMIT){
 			    	break;
 			    }
-			    LOG.info("### container"+cnt.getContainerId()+"ratio "+balloonRatio+"balloon to"+newCntMemory+"###");
+			    LOG.info("### container"+cnt.getContainerId()+"ratio "+balloonRatio+" balloon to"+newCntMemory+"###");
 			    cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
 			    nodeCurrentUsed+=newMemory;
 			    balloonRatio/=2;

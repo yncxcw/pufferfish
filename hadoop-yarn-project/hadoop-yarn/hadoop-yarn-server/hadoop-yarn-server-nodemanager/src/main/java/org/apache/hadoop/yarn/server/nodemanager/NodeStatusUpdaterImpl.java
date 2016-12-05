@@ -640,7 +640,9 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
             removeOrTrackCompletedContainersFromContext(response
                   .getContainersToBeRemovedFromNM());
 
+           
             lastHeartBeatID = response.getResponseId();
+            LOG.info("receive heartbeat: id "+lastHeartBeatID);
             List<ContainerId> containersToCleanup = response
                 .getContainersToCleanup();
             if (!containersToCleanup.isEmpty()) {

@@ -680,11 +680,11 @@ public class ContainerImpl implements Container {
 				}
 				
 				
-				//LOG.info("###"+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"$$$");
+				LOG.info("###"+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"$$$");
 				
 				//if we come here it means we need to sleep for 2s
 				 try {
-					    Thread.sleep(500);
+					    Thread.sleep(1000);
 					} catch (InterruptedException e) {
 					    e.printStackTrace();
 				 }
@@ -797,10 +797,7 @@ public class ContainerImpl implements Container {
 		}
 		
 		public void setConfiguredMemory(long configuredMemory){
-			if(configuredMemory == this.currentConfiguredMemory){
-				return;
-			}
-			currentConfiguredMemory = configuredMemory;
+			this.currentConfiguredMemory = configuredMemory;
 			isUpdated=true;
 		}
 		
@@ -847,12 +844,16 @@ public class ContainerImpl implements Container {
 				 
 			    } catch (IOException e) {
 			      int exitCode = shExec.getExitCode();
-			      if (exitCode != ExitCode.FORCE_KILLED.getExitCode()
-			          && exitCode != ExitCode.TERMINATED.getExitCode()) {
-			        LOG.warn("Exception from Docker update with container ID: "
+			      LOG.warn("Exception from Docker update with container ID: "
 			            + name + " and exit code: " + exitCode, e); 
-			      }
 			      count--;
+			      
+			    try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 			      continue;
 			      
 			    } finally {
@@ -860,10 +861,11 @@ public class ContainerImpl implements Container {
 			        shExec.close();
 			      }
 			    }
-		        LOG.info("command execution successfully");
+		      
 		        break; 
 			 }
 			
+			 LOG.info("finish execution successfully  "+name);
 			 return shExec.getOutput().trim();
 		   }
 		
