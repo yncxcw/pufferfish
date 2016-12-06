@@ -47,14 +47,17 @@ public class NodeMemoryManager {
 	 
 	 final double CONTAINER_BALLOON_RATIO;
 	 
-	 
 	 final int DEFAULT_NODE_SIZE;
 	 
+	 final long SWAP_KEEP_TIME;
 	 //nodeCurrentUsedMemory
-	 int nodeCurrentUsed;
+	 long nodeCurrentUsed;
 
 	 //used to do moving avarage ##of 5
 	 Map<ContainerId,Long> containerToMemoryUsage;
+	 
+	 //used to record the statics of swapping container;
+	 Map<ContainerId,Long> containerToSwap;
 	 
 	 //used to lock when read
 	 Lock readLock;
@@ -69,6 +72,7 @@ public class NodeMemoryManager {
 			      YarnConfiguration.NM_PMEM_MB, YarnConfiguration.DEFAULT_NM_PMEM_MB
 			                         );
 		 this.containerToMemoryUsage  = new HashMap<ContainerId,Long>();
+		 this.containerToSwap         = new HashMap<ContainerId,Long>();
 		 //TODO add configuration
 		 this.STOP_BALLOON_LIMIT      = conf.getDouble(YarnConfiguration.RATIO_STOP_BALLON_LIMIT,
 				                                       YarnConfiguration.DEFAULT_RATIO_STOP_BALLON_LIMIT);
@@ -79,50 +83,88 @@ public class NodeMemoryManager {
 		 this.RECLAIM_BALLOON_LIMIT   = conf.getDouble(YarnConfiguration.RATIO_RECLAIM_BALLOON_LIMIT,
 				                                       YarnConfiguration.DEFAULT_RATIO__RECLAIM_BALLOON_LIMIT);
 		 
+		 //keep for 1 minute
+		 this.SWAP_KEEP_TIME          = 15;
 		 ReadWriteLock readWriteLock  = new ReentrantReadWriteLock();
 		 this.readLock  = readWriteLock.readLock();
 		 this.writeLock = readWriteLock.writeLock();
 	 }
 	  
+	 
+	 private void updateMetrics(){
+		 try {
+			 this.writeLock.lock();
+			 //recompute current used
+			 nodeCurrentUsed                   = 0;
+			 Set<ContainerId> containerIds     = this.context.getContainers().keySet();
+			 //we delete out of date containercontainerToMemoryUsage
+			 Iterator<Entry<ContainerId, Long>> it = this.containerToMemoryUsage.entrySet().iterator();
+			 while(it.hasNext()){
+				 Map.Entry<ContainerId, Long> entry=it.next();
+				 if(!containerIds.contains(entry.getKey())){
+					 it.remove();
+				 }
+			 }
+			 
+			 //we delete out of data containersToSwap
+			 Iterator<Entry<ContainerId, Long>> is = this.containerToSwap.entrySet().iterator();
+			 while(is.hasNext()){
+				 Map.Entry<ContainerId,Long> entry = is.next();
+				 if(!containerIds.contains(entry.getKey())){
+					 is.remove();
+				 }
+			 }
+			
+			 //we update the newly memory consumption
+			 for(ContainerId containerId : containerIds){
+				 Container container     = this.context.getContainers().get(containerId);
+				 long currentUsed        = container.getContainerMonitor().getCurrentUsedMemory();
+				 //update contaienr memory usage map
+				 this.containerToMemoryUsage.put(containerId, currentUsed);
+				 //accumulated host memory usage
+				 this.nodeCurrentUsed+=currentUsed;
+			 }
+			 
+			 //we update newly container swapping
+			 for(ContainerId containerId : containerIds){
+				 Container container     = this.context.getContainers().get(containerId);
+			     //only keep flexible container
+				 if(!container.isFlexble()){
+			    	 continue;
+			     }
+				 
+				//add to swapping group
+				 if(container.getContainerMonitor().getIsSwapping()){
+	                 //LOG.info("add swapping container"+container.getContainerId());
+	            	 this.containerToSwap.put(containerId, SWAP_KEEP_TIME);
+	             
+	             //update its waiting time if not swap this round
+				 }else if(this.containerToSwap.containsKey(containerId)){
+					 long currentWaitTime = this.containerToSwap.get(containerId);
+					 currentWaitTime--;
+					 this.containerToSwap.put(containerId, currentWaitTime);
+					 if(this.containerToSwap.get(containerId) <0){
+						 this.containerToSwap.remove(containerId);
+					 }
+				 } 
+			 }
+		 }finally{
+			 this.writeLock.unlock();
+		 }
+	 }
 	 //called in ContainerMonitor preodically to balloon the contaier out
 	 //of its demand
 	 public void MemoryBalloon(){
 	 //LOG.info("memory balloon called");
-     try {
-		 this.writeLock.lock();
-		 //recompute current used
-		 nodeCurrentUsed                  = 0;
-		 Set<ContainerId> containerIds    = this.context.getContainers().keySet();
 		 List<Container>  swappingContainer= new ArrayList<Container>();
-		 //we delete out of date containercontainerToMemoryUsage
-		 Iterator<Entry<ContainerId, Long>> it = this.containerToMemoryUsage.entrySet().iterator();
 		 
-		 while(it.hasNext()){
-			 Map.Entry<ContainerId, Long> entry=it.next();
-			 if(!containerIds.contains(entry.getKey())){
-				 it.remove();
-			 }
+		 this.updateMetrics();
+		 
+		 for(Entry<ContainerId, Long> entry: this.containerToSwap.entrySet()){
+			 ContainerId containerId=entry.getKey();
+			 swappingContainer.add(this.context.getContainers().get(containerId));
 		 }
-		
-		 //we update the newly memory consumption
-		 for(ContainerId containerId : containerIds){
-			 Container container     = this.context.getContainers().get(containerId);
-			 long currentUsed        = container.getContainerMonitor().getCurrentUsedMemory();
-			 //let it go, if this container is not running yet
-			 if(currentUsed == 0){
-				continue;
-			 }
-			 //update contaienr memory usage map
-			 containerToMemoryUsage.put(containerId, currentUsed);
-			 //add to swapping group
-			 if(container.getContainerMonitor().getIsSwapping() && container.isFlexble()){
-			
-                   //LOG.info("add swapping container"+container.getContainerId());
-            	   swappingContainer.add(container); 
-                
-			 }
-			 nodeCurrentUsed+=currentUsed;
-		 }
+		 
 		 //sort swapping container by its starting time
 		 Collections.sort(swappingContainer, new Comparator<Container>() {
 		        @Override
@@ -147,32 +189,40 @@ public class NodeMemoryManager {
 		 double balloonRatio = CONTAINER_BALLOON_RATIO;
 		 //If we have available memory, we will choose memory hungry container to balloon
 		 //earliest balloon first
+		 
+		  int swappingSize=0;
 		  if(swappingContainer.size() > 0){
-		      LOG.info("swapping size: "+swappingContainer.size());
+			  LOG.info("swapping container size "+swappingContainer.size());
 		  }
 		  for(Container cnt : swappingContainer){
 			    //compute new memory after balloon
-			    int newMemory    = (int) (cnt.getContainerMonitor().getCurrentLimitedMemory()*balloonRatio);
-			    long newCntMemory = cnt.getContainerMonitor().getCurrentLimitedMemory()+newMemory;
-			    int currentUsage = nodeCurrentUsed+newMemory;
-			    if(currentUsage*1.0/nodeTotal*1.0 > STOP_BALLOON_LIMIT){
-			    	break;
-			    }
-			    LOG.info("### container"+cnt.getContainerId()+"ratio "+balloonRatio+" balloon to"+newCntMemory+"###");
-			    cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
-			    nodeCurrentUsed+=newMemory;
-			    balloonRatio/=2;
+			    LOG.info("cached swapping container: "+cnt.getContainerId()+"  ratio:"+balloonRatio);
+		       if(cnt.getContainerMonitor().getIsSwapping()){
+		    	   swappingSize++;
+			       int oldMemory     = (int) cnt.getContainerMonitor().getCurrentLimitedMemory();
+			       int newMemory     = (int) (oldMemory*balloonRatio);
+			       long newCntMemory = oldMemory+newMemory;
+			       long currentUsage  = nodeCurrentUsed+newMemory;
+			       if(currentUsage*1.0/nodeTotal*1.0 > STOP_BALLOON_LIMIT){
+			    	   LOG.info("out of host break");
+			    	   break;
+			        }
+			        LOG.info("### container"+cnt.getContainerId()+"ratio "+balloonRatio+"from"+oldMemory+"to"+newCntMemory+"###");
+			        cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
+			        nodeCurrentUsed+=newMemory;
+		        }
+			    balloonRatio/=4;
+			    
 		  }
-	 }finally{
-		 this.writeLock.unlock();
-	 }
-	
+		  if(swappingSize > 0){
+		      LOG.info("swapping size: "+swappingSize);
+		  }
  }
 	 
  public void MemoryReclaim(int requestSize){
- LOG.info("memory reclaim called");
- try {
-	this.readLock.lock();
+    LOG.info("memory reclaim called");
+    //update metrics
+	this.updateMetrics();
 	 //we bypass memory reclaim
 	 if(nodeCurrentUsed + requestSize < nodeTotal*RECLAIM_BALLOON_LIMIT){
 		 return;
@@ -184,7 +234,7 @@ public class NodeMemoryManager {
 	 List<Container> scontainers = new ArrayList<Container>();
 	 for(ContainerId cntId: containerToMemoryUsage.keySet()){
 		 Container container = (Container) this.context.getContainers().get(cntId);
-		 if(container.getContainerMonitor().getCurrentUsedMemory() > 
+		 if(containerToMemoryUsage.get(cntId) > 
 		                          container.getResource().getMemory()){
 			 if(container.getContainerMonitor().getIsSwapping())
 				 scontainers.add(container);
@@ -236,9 +286,6 @@ public class NodeMemoryManager {
 		 }
 		 
 	 }
-	}finally{
-		 this.readLock.unlock();
-	}
 	return; 
  }	 
 	 

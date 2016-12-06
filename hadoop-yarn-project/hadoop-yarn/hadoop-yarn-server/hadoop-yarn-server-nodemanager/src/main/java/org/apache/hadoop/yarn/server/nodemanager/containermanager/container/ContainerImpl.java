@@ -622,6 +622,8 @@ public class ContainerImpl implements Container {
 			}
 			LOG.info("initialize configured: "+name+currentConfiguredMemory);
 			this.isSwapping=false;
+			this.currentUsedMemory=0;
+			this.currentUsedSwap=0;
 			
 		    
 		}
@@ -646,29 +648,21 @@ public class ContainerImpl implements Container {
 			//int count = 3;
 			//int index = 0;
 			while(stateMachine.getCurrentState() == ContainerState.RUNNING && isRunning){
-				
-				getCurrentLimitedMemory();
-				//get current used memory
-				getCurrentUsedMemory();
-				//get current used swap
-				getCurrentUsedSwap();
+				updateCgroupValues();
 				//if used memory+swap > configured and swap > threadshhod
-				
-				if(currentUsedMemory+currentUsedSwap>limitedMemory
-					&& currentUsedSwap > 100){
+				if(getIsSwapping()){
 				   if(!isSwapping){
 					 //optimize technique to minimize overhead
-					 isSwapping = true;
+					 LOG.info("stop cpu by monitor "+name);
 					 DockerCommandCpuQuota(1000);
-				   }
-				     
-					 
-				     
+					 isSwapping = true;
+				   }	     
 				}else{
 				   if(isSwapping){
 					 //resume the cpu usage  
-					 isSwapping = false;
+					 LOG.info("release cpu by monitor "+name);
 					 DockerCommandCpuQuota(-1);
+					 isSwapping = false;
 				   }
 				   
 				}
@@ -676,11 +670,11 @@ public class ContainerImpl implements Container {
 				//update configured memory
 				if(isUpdated){
 				   updateConfiguredMemory();  	
-				  isUpdated=false;	
+				   isUpdated=false;	
 				}
 				
 				
-				LOG.info("###"+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"$$$");
+				//LOG.info("###"+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"$$$");
 				
 				//if we come here it means we need to sleep for 2s
 				 try {
@@ -693,20 +687,30 @@ public class ContainerImpl implements Container {
 		}
 		
 	
+		private void updateCgroupValues(){
+			
+			getCurrentLimitedMemory();
+			//get current used memory
+			getCurrentUsedMemory();
+			//get current used swap
+			getCurrentUsedSwap();
+		}
+		
 		private void updateConfiguredMemory(){
 			
-	        long limitedMemory = getCurrentLimitedMemory();
-	        
-	        LOG.info("container: "+containerId.toString()+" old: "+limitedMemory
+	        LOG.info("container: "+name+" old: "+limitedMemory
 	        		 +"new: "+currentConfiguredMemory);
 	        
 	        if(currentConfiguredMemory > limitedMemory){
 	        	DockerCommandMemory(currentConfiguredMemory);
 	        	//whatever we open cpu here
+	        	LOG.info("release cpu by ballon "+name);
 	        	DockerCommandCpuQuota(-1);
-	        }else{
+	        	isSwapping=false;
+	        }else if(currentConfiguredMemory < limitedMemory){
 	        	//whatever we throttle cpu here
 	        	DockerCommandCpuQuota(1000);
+	        	isSwapping=true;
 	        	while(currentConfiguredMemory < limitedMemory){
 	        		limitedMemory = limitedMemory - 1024;
 	        		if(limitedMemory<0){
@@ -771,6 +775,7 @@ public class ContainerImpl implements Container {
 		private long getCurrentUsedSwap(){
 			if(!isRunning)
 				return 0;
+			
 			String path=memoryPath+"memory.stat";
 			List<String> readlines=readFileLines(path);
 			if(readlines!=null){
@@ -787,6 +792,7 @@ public class ContainerImpl implements Container {
 		public long getCurrentUsedMemory(){
 			if(!isRunning)
 				return 0;
+			
 			String path=memoryPath+"memory.usage_in_bytes";
 			List<String> readlines=readFileLines(path);
 			if(readlines!=null){
@@ -797,6 +803,7 @@ public class ContainerImpl implements Container {
 		}
 		
 		public void setConfiguredMemory(long configuredMemory){
+			
 			this.currentConfiguredMemory = configuredMemory;
 			isUpdated=true;
 		}
@@ -806,7 +813,16 @@ public class ContainerImpl implements Container {
 		public boolean getIsSwapping(){
 			if(!isRunning)
 				return false;
-			return isSwapping;
+			
+			updateCgroupValues();
+		    
+			if(currentUsedMemory+currentUsedSwap>limitedMemory
+					&& currentUsedSwap > 100){
+				return true;
+			}else{
+				
+				return false;
+			}
 		}
 		
 		//recalim $claimSize MB memory from used container
@@ -835,8 +851,8 @@ public class ContainerImpl implements Container {
 			 }
 			 LOG.info("run docker commands:"+commandString);
 			 ShellCommandExecutor shExec = null; 
-			 int count = 10;
-			 while(count > 0){
+			 int count = 1;
+			 while(count < 110){
 			 //we try 10 times if fails due to device busy 
 		     try { 
 				  shExec = new ShellCommandExecutor(command);
@@ -846,10 +862,10 @@ public class ContainerImpl implements Container {
 			      int exitCode = shExec.getExitCode();
 			      LOG.warn("Exception from Docker update with container ID: "
 			            + name + " and exit code: " + exitCode, e); 
-			      count--;
+			      count++;
 			      
 			    try {
-					Thread.sleep(1000);
+					Thread.sleep(1000*count);
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
