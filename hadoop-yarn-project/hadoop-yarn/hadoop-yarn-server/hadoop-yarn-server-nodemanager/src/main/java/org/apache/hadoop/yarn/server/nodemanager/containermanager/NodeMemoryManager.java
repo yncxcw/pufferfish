@@ -84,7 +84,7 @@ public class NodeMemoryManager {
 				                                       YarnConfiguration.DEFAULT_RATIO__RECLAIM_BALLOON_LIMIT);
 		 
 		 //keep for 1 minute
-		 this.SWAP_KEEP_TIME          = 15;
+		 this.SWAP_KEEP_TIME          = 30;
 		 ReadWriteLock readWriteLock  = new ReentrantReadWriteLock();
 		 this.readLock  = readWriteLock.readLock();
 		 this.writeLock = readWriteLock.writeLock();
@@ -145,6 +145,7 @@ public class NodeMemoryManager {
 					 this.containerToSwap.put(containerId, currentWaitTime);
 					 if(this.containerToSwap.get(containerId) <0){
 						 this.containerToSwap.remove(containerId);
+						 LOG.info(containerId+" is removed");
 					 }
 				 } 
 			 }
@@ -155,7 +156,7 @@ public class NodeMemoryManager {
 	 //called in ContainerMonitor preodically to balloon the contaier out
 	 //of its demand
 	 public void MemoryBalloon(){
-	 //LOG.info("memory balloon called");
+	     LOG.info("memory balloon called");
 		 List<Container>  swappingContainer= new ArrayList<Container>();
 		 
 		 this.updateMetrics();
