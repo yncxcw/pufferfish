@@ -674,7 +674,7 @@ public class ContainerImpl implements Container {
 				}
 				
 				
-				//LOG.info("###"+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"$$$");
+				LOG.info("$$$  "+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
 				
 				//if we come here it means we need to sleep for 2s
 				 try {

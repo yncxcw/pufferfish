@@ -201,7 +201,7 @@ public class NodeMemoryManager {
 		 
 		  int swappingSize=0;
 		  if(swappingContainer.size() > 0){
-			  LOG.info("swapping container size "+swappingContainer.size());
+			 // LOG.info("swapping container size "+swappingContainer.size());
 		  }
 		  for(Container cnt : swappingContainer){
 			    //compute new memory after balloon
@@ -218,7 +218,9 @@ public class NodeMemoryManager {
 					   newCntMemory = oldMemory+newMemory;
 					   cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
 					   nodeCurrentAssigned+=newMemory;
-			    	   LOG.info("out of host break");
+			    	   LOG.info("out of host break ");
+					   LOG.info("### container"+cnt.getContainerId()+"ratio "+balloonRatio+"from"+oldMemory+"to"+newCntMemory+"###");
+
 			    	   break;
 			        }
 			        LOG.info("### container"+cnt.getContainerId()+"ratio "+balloonRatio+"from"+oldMemory+"to"+newCntMemory+"###");
@@ -230,7 +232,7 @@ public class NodeMemoryManager {
 			    
 		  }
 		  if(swappingSize > 0){
-		      LOG.info("swapping size: "+swappingSize);
+		      //LOG.info("swapping size: "+swappingSize);
 		  }
  }
 	 
