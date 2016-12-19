@@ -53,6 +53,9 @@ public class NodeMemoryManager {
 	 //nodeCurrentUsedMemory
 	 long nodeCurrentUsed;
 
+	//nodeCurrentAssignedMemory
+	long nodeCurrentAssigned;
+
 	 //used to do moving avarage ##of 5
 	 Map<ContainerId,Long> containerToMemoryUsage;
 	 
@@ -83,8 +86,8 @@ public class NodeMemoryManager {
 		 this.RECLAIM_BALLOON_LIMIT   = conf.getDouble(YarnConfiguration.RATIO_RECLAIM_BALLOON_LIMIT,
 				                                       YarnConfiguration.DEFAULT_RATIO__RECLAIM_BALLOON_LIMIT);
 		 
-		 //keep for 1 minute
-		 this.SWAP_KEEP_TIME          = 30;
+		 //keep for 2 minute
+		 this.SWAP_KEEP_TIME          = 60;
 		 ReadWriteLock readWriteLock  = new ReentrantReadWriteLock();
 		 this.readLock  = readWriteLock.readLock();
 		 this.writeLock = readWriteLock.writeLock();
@@ -96,6 +99,7 @@ public class NodeMemoryManager {
 			 this.writeLock.lock();
 			 //recompute current used
 			 nodeCurrentUsed                   = 0;
+			 nodeCurrentAssigned               = 0;
 			 Set<ContainerId> containerIds     = this.context.getContainers().keySet();
 			 //we delete out of date containercontainerToMemoryUsage
 			 Iterator<Entry<ContainerId, Long>> it = this.containerToMemoryUsage.entrySet().iterator();
@@ -119,10 +123,12 @@ public class NodeMemoryManager {
 			 for(ContainerId containerId : containerIds){
 				 Container container     = this.context.getContainers().get(containerId);
 				 long currentUsed        = container.getContainerMonitor().getCurrentUsedMemory();
+				 long currentAssigned    = container.getContainerMonitor().getCurrentLimitedMemory();
 				 //update contaienr memory usage map
 				 this.containerToMemoryUsage.put(containerId, currentUsed);
 				 //accumulated host memory usage
 				 this.nodeCurrentUsed+=currentUsed;
+				 this.nodeCurrentAssigned+=currentAssigned;
 			 }
 			 
 			 //we update newly container swapping
@@ -175,7 +181,8 @@ public class NodeMemoryManager {
 		  } );
 		 //out of the limit, we do nothing, since ContainerImpl will throttle the cpu
 		 //usage for this container
-		 double usage = nodeCurrentUsed*1.0/nodeTotal*1.0;
+		 double usage    = nodeCurrentUsed*1.0/nodeTotal*1.0;
+		 double assignage= nodeCurrentAssigned*1.0/nodeTotal*1.0;
 		 if(usage > RECLAIM_BALLOON_LIMIT){
 			
 			 int memoryClaimed=(int)(usage-RECLAIM_BALLOON_LIMIT)*nodeTotal;
@@ -183,7 +190,7 @@ public class NodeMemoryManager {
 			 this.MemoryReclaim(memoryClaimed);
 			 return;
 			 
-		 }else if( usage > STOP_BALLOON_LIMIT && usage < RECLAIM_BALLOON_LIMIT){
+		 }else if( assignage > STOP_BALLOON_LIMIT){
 			 return;
 		 }
 		 //TODO test if ordered right
@@ -211,6 +218,7 @@ public class NodeMemoryManager {
 			        LOG.info("### container"+cnt.getContainerId()+"ratio "+balloonRatio+"from"+oldMemory+"to"+newCntMemory+"###");
 			        cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
 			        nodeCurrentUsed+=newMemory;
+
 		        }
 			    balloonRatio/=4;
 			    
