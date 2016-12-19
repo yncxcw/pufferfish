@@ -87,7 +87,7 @@ public class NodeMemoryManager {
 				                                       YarnConfiguration.DEFAULT_RATIO__RECLAIM_BALLOON_LIMIT);
 		 
 		 //keep for 2 minute
-		 this.SWAP_KEEP_TIME          = 60;
+		 this.SWAP_KEEP_TIME          = 150;
 		 ReadWriteLock readWriteLock  = new ReentrantReadWriteLock();
 		 this.readLock  = readWriteLock.readLock();
 		 this.writeLock = readWriteLock.writeLock();
