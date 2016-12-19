@@ -226,7 +226,7 @@ public class NodeMemoryManager {
 			        nodeCurrentAssigned+=newMemory;
 
 		        }
-			    balloonRatio/=4;
+			    balloonRatio/=8;
 			    
 		  }
 		  if(swappingSize > 0){
