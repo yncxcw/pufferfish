@@ -166,7 +166,8 @@ public class TestContainerLaunch extends BaseContainerManagerTest {
         commands.add("/bin/sh ./\\\"" + badSymlink + "\\\"");
       }
 
-      new DefaultContainerExecutor().writeLaunchEnv(fos, env, resources, commands);
+     // new DefaultContainerExecutor().writeLaunchEnv(fos, env, resources, commands);
+
       fos.flush();
       fos.close();
       FileUtil.setExecutable(tempFile, true);
@@ -233,7 +234,7 @@ public class TestContainerLaunch extends BaseContainerManagerTest {
       } else {
         commands.add("/bin/sh ./\\\"" + symLink + "\\\"");
       }
-      new DefaultContainerExecutor().writeLaunchEnv(fos, env, resources, commands);
+      //new DefaultContainerExecutor().writeLaunchEnv(fos, env, resources, commands);
       fos.flush();
       fos.close();
       FileUtil.setExecutable(tempFile, true);
@@ -286,7 +287,9 @@ public class TestContainerLaunch extends BaseContainerManagerTest {
           "\"workflowName\":\"\n\ninsert table " +
           "\npartition (cd_education_status)\nselect cd_demo_sk, cd_gender, " );
       List<String> commands = new ArrayList<String>();
-      new DefaultContainerExecutor().writeLaunchEnv(fos, env, resources, commands);
+
+      //new DefaultContainerExecutor().writeLaunchEnv(fos, env, resources, commands);
+
       fos.flush();
       fos.close();
 
@@ -364,7 +367,7 @@ public class TestContainerLaunch extends BaseContainerManagerTest {
       List<String> commands = new ArrayList<String>();
       commands.add(command);
       ContainerExecutor exec = new DefaultContainerExecutor();
-      exec.writeLaunchEnv(fos, env, resources, commands);
+      //exec.writeLaunchEnv(fos, env, resources, commands);
       fos.flush();
       fos.close();
 
