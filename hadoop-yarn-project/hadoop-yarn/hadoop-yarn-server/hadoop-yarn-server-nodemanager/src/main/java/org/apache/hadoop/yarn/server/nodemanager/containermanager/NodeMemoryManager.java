@@ -162,7 +162,7 @@ public class NodeMemoryManager {
 	 //called in ContainerMonitor preodically to balloon the contaier out
 	 //of its demand
 	 public void MemoryBalloon(){
-	     LOG.info("memory balloon called");
+	     //LOG.info("memory balloon called");
 		 List<Container>  swappingContainer= new ArrayList<Container>();
 		 
 		 this.updateMetrics();
