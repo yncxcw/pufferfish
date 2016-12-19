@@ -191,6 +191,7 @@ public class NodeMemoryManager {
 			 return;
 			 
 		 }else if( assignage > STOP_BALLOON_LIMIT){
+			 LOG.info("stop ballooning at assign usage"+assignage);
 			 return;
 		 }
 		 //TODO test if ordered right
