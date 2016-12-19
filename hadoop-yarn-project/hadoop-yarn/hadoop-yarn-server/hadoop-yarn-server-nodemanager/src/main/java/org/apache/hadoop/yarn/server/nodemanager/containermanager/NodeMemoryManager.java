@@ -211,14 +211,19 @@ public class NodeMemoryManager {
 			       int oldMemory     = (int) cnt.getContainerMonitor().getCurrentLimitedMemory();
 			       int newMemory     = (int) (oldMemory*balloonRatio);
 			       long newCntMemory = oldMemory+newMemory;
-			       long currentUsage  = nodeCurrentUsed+newMemory;
-			       if(currentUsage*1.0/nodeTotal*1.0 > STOP_BALLOON_LIMIT){
+			       long currentAssigned = nodeCurrentAssigned+newMemory;
+			       if(currentAssigned*1.0/nodeTotal*1.0 > STOP_BALLOON_LIMIT){
+					   //available memory to be assigned
+					   newMemory = (int)(nodeTotal*STOP_BALLOON_LIMIT-nodeCurrentAssigned);
+					   newCntMemory = oldMemory+newMemory;
+					   cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
+					   nodeCurrentAssigned+=newMemory;
 			    	   LOG.info("out of host break");
 			    	   break;
 			        }
 			        LOG.info("### container"+cnt.getContainerId()+"ratio "+balloonRatio+"from"+oldMemory+"to"+newCntMemory+"###");
 			        cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
-			        nodeCurrentUsed+=newMemory;
+			        nodeCurrentAssigned+=newMemory;
 
 		        }
 			    balloonRatio/=4;
