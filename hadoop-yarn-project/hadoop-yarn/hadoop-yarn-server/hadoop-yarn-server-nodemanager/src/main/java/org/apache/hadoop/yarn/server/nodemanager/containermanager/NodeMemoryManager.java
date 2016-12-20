@@ -223,7 +223,7 @@ public class NodeMemoryManager {
 
 			    	   break;
 			        }
-			        LOG.info("### container"+cnt.getContainerId()+"ratio "+balloonRatio+"from"+oldMemory+"to"+newCntMemory+"###");
+			        LOG.info("### container "+cnt.getContainerId()+" ratio "+balloonRatio+" from "+oldMemory+" to "+newCntMemory+" ###");
 			        cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
 			        nodeCurrentAssigned+=newMemory;
 

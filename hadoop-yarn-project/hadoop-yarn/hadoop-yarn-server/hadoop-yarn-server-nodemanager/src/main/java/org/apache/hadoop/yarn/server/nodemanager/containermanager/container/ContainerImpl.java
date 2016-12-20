@@ -709,6 +709,7 @@ public class ContainerImpl implements Container {
 	        	isSwapping=false;
 	        }else if(currentConfiguredMemory < limitedMemory){
 	        	//whatever we throttle cpu here
+                LOG.info("stop cpu by reclaim "+name);
 	        	DockerCommandCpuQuota(1000);
 	        	isSwapping=true;
 	        	while(currentConfiguredMemory < limitedMemory){
