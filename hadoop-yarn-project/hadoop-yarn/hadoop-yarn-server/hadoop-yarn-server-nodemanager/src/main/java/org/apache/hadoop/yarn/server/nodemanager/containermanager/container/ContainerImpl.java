@@ -715,12 +715,14 @@ public class ContainerImpl implements Container {
 	        	isSwapping=true;
 	        	while(currentConfiguredMemory < limitedMemory){
 	        		limitedMemory = limitedMemory - 512;
-	        		if(limitedMemory<0){
-	        		   break;
+	        		LOG.info("shrink configure: "+currentConfiguredMemory);
+                    LOG.info("shrink limited:   "+limitedMemory);
 	        		}
 	        		DockerCommandMemory(limitedMemory);
 	        	}
 	        	DockerCommandMemory(currentConfiguredMemory);
+                LOG.info("shrink configure: "+currentConfiguredMemory);
+                LOG.info("shrink limited:   "+limitedMemory);
                 LOG.info(name+" finish shrinking");
 	        }
 	        
