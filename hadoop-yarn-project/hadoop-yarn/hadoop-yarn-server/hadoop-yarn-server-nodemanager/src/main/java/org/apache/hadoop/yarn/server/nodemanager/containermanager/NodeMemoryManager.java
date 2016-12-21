@@ -187,7 +187,7 @@ public class NodeMemoryManager {
 		 LOG.info("assignage: "+assignage);
 		 if(assignage > RECLAIM_BALLOON_LIMIT){
 			
-			 int memoryClaimed=(int)(assignage-RECLAIM_BALLOON_LIMIT*nodeTotal);
+			 int memoryClaimed=(int)((assignage-RECLAIM_BALLOON_LIMIT)*nodeTotal);
 			 LOG.info("out of limit reclaim: "+memoryClaimed);
 			 this.MemoryReclaim(memoryClaimed);
 			 return;
@@ -215,6 +215,7 @@ public class NodeMemoryManager {
 				   int available     = (int) (nodeTotal*STOP_BALLOON_LIMIT-nodeCurrentAssigned);
 				   if(available <=0){
 					   LOG.info("balloon error: "+ available);
+					   return;
 				   }
 				   if(newMemory >= available){
 					   newMemory = available;
