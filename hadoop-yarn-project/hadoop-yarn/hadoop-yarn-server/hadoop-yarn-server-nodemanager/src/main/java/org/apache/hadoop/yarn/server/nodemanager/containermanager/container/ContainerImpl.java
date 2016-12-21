@@ -713,7 +713,7 @@ public class ContainerImpl implements Container {
 	        	DockerCommandCpuQuota(1000);
 	        	isSwapping=true;
 	        	while(currentConfiguredMemory < limitedMemory){
-	        		limitedMemory = limitedMemory - 1024;
+	        		limitedMemory = limitedMemory - 512;
 	        		if(limitedMemory<0){
 	        		   break;
 	        		}
@@ -866,9 +866,10 @@ public class ContainerImpl implements Container {
 			      LOG.warn("Exception from Docker update with container ID: "
 			            + name + " and exit code: " + exitCode, e); 
 			      count++;
+                 LOG.info("tries for "+count);
 			      
 			    try {
-					Thread.sleep(1000*count);
+					Thread.sleep(100*count);
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
