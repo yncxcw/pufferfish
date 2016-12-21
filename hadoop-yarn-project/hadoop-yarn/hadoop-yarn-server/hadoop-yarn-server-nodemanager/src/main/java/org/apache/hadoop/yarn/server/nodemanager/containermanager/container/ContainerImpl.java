@@ -710,6 +710,7 @@ public class ContainerImpl implements Container {
 	        }else if(currentConfiguredMemory < limitedMemory){
 	        	//whatever we throttle cpu here
                 LOG.info("stop cpu by reclaim "+name);
+                LOG.info(name+" shrink ");
 	        	DockerCommandCpuQuota(1000);
 	        	isSwapping=true;
 	        	while(currentConfiguredMemory < limitedMemory){
@@ -720,6 +721,7 @@ public class ContainerImpl implements Container {
 	        		DockerCommandMemory(limitedMemory);
 	        	}
 	        	DockerCommandMemory(currentConfiguredMemory);
+                LOG.info(name+" finish shrinking");
 	        }
 	        
 		}
