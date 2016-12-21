@@ -185,12 +185,12 @@ public class NodeMemoryManager {
 		 double assignage= nodeCurrentAssigned*1.0/nodeTotal*1.0;
 		 if(usage > RECLAIM_BALLOON_LIMIT){
 			
-			 int memoryClaimed=(int)(usage-RECLAIM_BALLOON_LIMIT)*nodeTotal;
+			 int memoryClaimed=(int)(assignage-RECLAIM_BALLOON_LIMIT*nodeTotal);
 			 LOG.info("out of limit reclaim: "+memoryClaimed);
 			 this.MemoryReclaim(memoryClaimed);
 			 return;
 			 
-		 }else if( assignage > STOP_BALLOON_LIMIT){
+		 }else if( assignage > STOP_BALLOON_LIMIT && assignage < RECLAIM_BALLOON_LIMIT){
 			 LOG.info("stop ballooning at assign usage"+assignage);
 			 return;
 		 }
@@ -237,11 +237,11 @@ public class NodeMemoryManager {
  }
 	 
  public void MemoryReclaim(int requestSize){
-    LOG.info("memory reclaim called");
+    LOG.info("memory reclaim called, current assigned: "+nodeCurrentAssigned+"  current used: "+nodeCurrentUsed+" request: "+requestSize);
     //update metrics
 	this.updateMetrics();
 	 //we bypass memory reclaim
-	 if(nodeCurrentUsed + requestSize < nodeTotal*RECLAIM_BALLOON_LIMIT){
+	 if(nodeCurrentAssigned + requestSize < nodeTotal*RECLAIM_BALLOON_LIMIT){
 		 return;
 	 }
 	 
@@ -251,8 +251,8 @@ public class NodeMemoryManager {
 	 List<Container> scontainers = new ArrayList<Container>();
 	 for(ContainerId cntId: containerToMemoryUsage.keySet()){
 		 Container container = (Container) this.context.getContainers().get(cntId);
-		 if(containerToMemoryUsage.get(cntId) > 
-		                          container.getResource().getMemory()){
+		 if(container.isFlexble() && (containerToMemoryUsage.get(cntId) >
+		                          container.getResource().getMemory())){
 			 if(container.getContainerMonitor().getIsSwapping())
 				 scontainers.add(container);
 			 else
@@ -262,25 +262,23 @@ public class NodeMemoryManager {
 	 
 	 //First, reclaim memory from swapped container
 	 if(scontainers.size() > 0){
-	 while(true){
+
 	    int thisRound = requestSize/scontainers.size();
 	    Iterator<Container> it=scontainers.iterator();
 	    while(it.hasNext()){
 		    long claimedSize =it.next().getContainerMonitor().
 				         reclaimMemory(thisRound);
-		    
-		    //no more memory for reclaiming for this container
-		    if(claimedSize < thisRound){
-		    	it.remove();
-		    }
+
 		    requestSize-=claimedSize;
+
+			if(requestSize <= 10){
+				break;
+			}
 	  }
-	    if(scontainers.size() == 0 || requestSize <=10){
-	    	break;
-	    }
-	 }
+
+
 	 if(requestSize<=10)
-	         return;
+		 return;
 	 }
 	 
 	 //Second, reclaim memory from latest balloon container
@@ -292,17 +290,24 @@ public class NodeMemoryManager {
 	        }
 	  } );
 	 
-	 while(requestSize > 10){
-		 for(int i=bcontainers.size()-1;i>=0;i--){
+
+	 if(bcontainers.size() > 0) {
+		 for (int i = bcontainers.size() - 1; i >= 0; i--) {
 			 //we choose container ordered by its submission time
 			 //by doing so, we restrict the affect of swapness to 
 			 //as less container as possible
 			 long claimedSize = bcontainers.get(i).
-					             getContainerMonitor().reclaimMemory(requestSize);
-			 requestSize-=claimedSize;	 
+					 getContainerMonitor().reclaimMemory(requestSize);
+			 requestSize -= claimedSize;
+
+			 if (requestSize <= 10) {
+				 break;
+			 }
 		 }
-		 
+
 	 }
+		 
+
 	return; 
  }	 
 	 
