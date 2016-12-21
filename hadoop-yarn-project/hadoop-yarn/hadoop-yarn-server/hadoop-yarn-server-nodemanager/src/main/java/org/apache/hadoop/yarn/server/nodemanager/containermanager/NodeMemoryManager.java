@@ -210,19 +210,13 @@ public class NodeMemoryManager {
 		    	   swappingSize++;
 			       int oldMemory     = (int) cnt.getContainerMonitor().getCurrentLimitedMemory();
 			       int newMemory     = (int) (oldMemory*balloonRatio);
+				   int available     = (int) (nodeTotal*STOP_BALLOON_LIMIT-nodeCurrentAssigned);
+				   if(newMemory >= available){
+					   newMemory = available;
+					   LOG.info("available: "+ available + " newMemory: "+newMemory+" Limit: "+nodeTotal*STOP_BALLOON_LIMIT);
+				   }
 			       long newCntMemory = oldMemory+newMemory;
-			       long currentAssigned = nodeCurrentAssigned+newMemory;
-			       if(currentAssigned*1.0/nodeTotal*1.0 > STOP_BALLOON_LIMIT){
-					   //available memory to be assigned
-					   newMemory = (int)(nodeTotal*STOP_BALLOON_LIMIT-nodeCurrentAssigned);
-					   newCntMemory = oldMemory+newMemory;
-					   cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
-					   nodeCurrentAssigned+=newMemory;
-			    	   LOG.info("out of host break ");
-					   LOG.info("### container"+cnt.getContainerId()+"ratio "+balloonRatio+"from"+oldMemory+"to"+newCntMemory+"###");
 
-			    	   break;
-			        }
 			        LOG.info("### container "+cnt.getContainerId()+" ratio "+balloonRatio+" from "+oldMemory+" to "+newCntMemory+" ###");
 			        cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
 			        nodeCurrentAssigned+=newMemory;
@@ -238,13 +232,15 @@ public class NodeMemoryManager {
 	 
  public void MemoryReclaim(int requestSize){
     LOG.info("memory reclaim called, current assigned: "+nodeCurrentAssigned+"  current used: "+nodeCurrentUsed+" request: "+requestSize);
-    //update metrics
+    LOG.info("limit: "+nodeTotal*RECLAIM_BALLOON_LIMIT);
+	 //update metrics
 	this.updateMetrics();
 	 //we bypass memory reclaim
 	 if(nodeCurrentAssigned + requestSize < nodeTotal*RECLAIM_BALLOON_LIMIT){
-		 LOG.info("new total: "+nodeCurrentAssigned+requestSize);
 		 return;
 	 }
+
+	 LOG.info("new total: "+nodeCurrentAssigned+requestSize);
 	 
 	 //Find all ballooned but not swapped containers
 	 List<Container> bcontainers = new ArrayList<Container>();
