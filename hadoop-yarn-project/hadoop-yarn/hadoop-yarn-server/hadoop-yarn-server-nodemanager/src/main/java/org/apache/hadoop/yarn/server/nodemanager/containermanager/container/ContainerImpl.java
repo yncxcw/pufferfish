@@ -834,13 +834,14 @@ public class ContainerImpl implements Container {
 		    if(!isRunning)
 		    	//TODO this is tricky, we should return current used to show that
 		    	//all memory is released
-		    	return currentUsedMemory;
-		    long left=Math.min(getResource().getMemory(),currentUsedMemory-claimSize);
-		    long reclaimed=currentUsedMemory-left;
+		    	return 0;
+		    long left=Math.max(getResource().getMemory(),limitedMemory-claimSize);
+		    long reclaimed=limitedMemory-left;
 
 		    currentConfiguredMemory=left;
 		    isUpdated=true;
-            LOG.info(name +" creclaim  "+reclaimed);
+            LOG.info(name +" creclaim  reclaimed: "+reclaimed);
+            LOG.info(name +" creclaim  left: "+left);
 		    return reclaimed;
 		}
 		
