@@ -837,8 +837,10 @@ public class ContainerImpl implements Container {
 		    	return currentUsedMemory;
 		    long left=Math.min(getResource().getMemory(),currentUsedMemory-claimSize);
 		    long reclaimed=currentUsedMemory-left;
+
 		    currentConfiguredMemory=left;
 		    isUpdated=true;
+            LOG.info(name +" reclaim  "+reclaimed);
 		    return reclaimed;
 		}
 		

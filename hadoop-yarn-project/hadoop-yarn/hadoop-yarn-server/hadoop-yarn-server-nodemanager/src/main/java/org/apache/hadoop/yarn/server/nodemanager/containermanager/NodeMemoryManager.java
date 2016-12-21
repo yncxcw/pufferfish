@@ -242,6 +242,7 @@ public class NodeMemoryManager {
 	this.updateMetrics();
 	 //we bypass memory reclaim
 	 if(nodeCurrentAssigned + requestSize < nodeTotal*RECLAIM_BALLOON_LIMIT){
+		 LOG.info("reclaim this round request: "+requestSize);
 		 return;
 	 }
 	 
