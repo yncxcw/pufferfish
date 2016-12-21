@@ -134,9 +134,9 @@ public class DockerContainerExecutor extends ContainerExecutor {
     String tokenFn = String.format(ContainerLocalizer.TOKEN_FILE_NAME_FMT, locId);
     Path tokenDst = new Path(appStorageDir, tokenFn);
     copyFile(nmPrivateContainerTokensPath, tokenDst, user);
-    LOG.info("Copying from " + nmPrivateContainerTokensPath + " to " + tokenDst);
+    //LOG.info("Copying from " + nmPrivateContainerTokensPath + " to " + tokenDst);
     lfs.setWorkingDirectory(appStorageDir);
-    LOG.info("CWD set to " + appStorageDir + " = " + lfs.getWorkingDirectory());
+    //LOG.info("CWD set to " + appStorageDir + " = " + lfs.getWorkingDirectory());
     // TODO: DO it over RPC for maintaining similarity?
     localizer.runLocalization(nmAddr);
   }
@@ -148,11 +148,11 @@ public class DockerContainerExecutor extends ContainerExecutor {
                              String userName, String appId, Path containerWorkDir,
                              List<String> localDirs, List<String> logDirs) throws IOException {
     
-	LOG.info("start launching");
+	//LOG.info("start launching");
 	String containerImageName = getConf().get(YarnConfiguration.NM_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME,
     		           YarnConfiguration.NM_DEFAULT_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME);
    
-    LOG.info("containerImageName from launchContext: " + containerImageName);
+    //LOG.info("containerImageName from launchContext: " + containerImageName);
     
     Preconditions.checkArgument(!Strings.isNullOrEmpty(containerImageName), "Container image must not be null");
     containerImageName = containerImageName.replaceAll("['\"]", "");
@@ -228,7 +228,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
         .append(" ")
         .append(containerImageName)
         .toString();
-    LOG.info("command strings "+commandStr);
+    //LOG.info("command strings "+commandStr);
     String dockerPidScript = "`" + dockerExecutor + " inspect --format {{.State.Pid}} " + containerIdStr + "`";
     // Create new local launch wrapper script
     LocalWrapperScriptBuilder sb =
@@ -322,7 +322,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
      
       //we put pwd first
       if(environment.get(pwdKey)!=null){
-    	  LOG.info("find PWD");
+    	  //LOG.info("find PWD");
     	  sb.env(pwdKey.toString(), environment.get(pwdKey).toString());
     	  environment.remove(pwdKey);
       }
@@ -337,7 +337,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
     
     //cd to $PWD
     sb.cd("$PWD");
-    LOG.info("try to cd to $PWD");
+    //LOG.info("try to cd to $PWD");
     //
     if (resources != null) {
       for (Map.Entry<Path,List<String>> entry : resources.entrySet()) {
@@ -350,7 +350,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
     //we hacked flexible container's 
     //jvm heap here
     if(container.isFlexble()){
-    	LOG.info("update jvm heap");
+    	//LOG.info("update jvm heap");
         int jvmHeap = getConf().getInt(
         		                       YarnConfiguration.FELXI_CONTAINER_HEAP_SIZE, 
         		                       YarnConfiguration.DEFAULT_FELXI_CONTAINER_HEAP_SIZE
@@ -358,7 +358,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
         for(int i=0;i<command.size();i++)
         {
         	if(command.get(i).contains("-Xmx")){
-        		LOG.info("find jvm str"+command.get(i));
+        		//LOG.info("find jvm str"+command.get(i));
         		command.set(i,"-Xmx"+Integer.toString(jvmHeap)+"m");
         	}
         }
@@ -387,7 +387,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
       }
     }
     {
-      LOG.info("Script: " + baos.toString("UTF-8"));
+      //LOG.info("Script: " + baos.toString("UTF-8"));
     }
   }
 
