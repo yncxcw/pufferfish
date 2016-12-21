@@ -840,7 +840,7 @@ public class ContainerImpl implements Container {
 
 		    currentConfiguredMemory=left;
 		    isUpdated=true;
-            LOG.info(name +" reclaim  "+reclaimed);
+            LOG.info(name +" creclaim  "+reclaimed);
 		    return reclaimed;
 		}
 		
