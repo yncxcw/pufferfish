@@ -240,7 +240,9 @@ public class NodeMemoryManager {
 		 return;
 	 }
 
-	 LOG.info("new total: "+nodeCurrentAssigned+requestSize);
+	 requestSize = (int)(nodeCurrentAssigned + requestSize-nodeTotal*RECLAIM_BALLOON_LIMIT);
+
+	 LOG.info("new reclaim: "+requestSize);
 	 
 	 //Find all ballooned but not swapped containers
 	 List<Container> bcontainers = new ArrayList<Container>();
