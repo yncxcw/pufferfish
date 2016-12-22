@@ -812,8 +812,8 @@ public class ContainerImpl implements Container {
 		}
 		
 		public void setConfiguredMemory(long configuredMemory){
-            //do nothing, if it is shrinking
-            if(isShrinking){
+            //do nothing, if it is shrinking and it's a ballooning
+            if(isShrinking && configuredMemory > this.currentConfiguredMemory){
                 LOG.info("quit configuring for: "+name);
                 return;
             }
