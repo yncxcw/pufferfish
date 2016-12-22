@@ -702,8 +702,8 @@ public class ContainerImpl implements Container {
 		
 		private void updateConfiguredMemory(){
 			
-	        //LOG.info("update container memory: "+name+" old: "+limitedMemory
-	        //		 +"new: "+currentConfiguredMemory);
+	        LOG.info("update container memory: "+name+" old: "+limitedMemory
+	        		 +"new: "+currentConfiguredMemory);
 
             double up  =0;
             double down=0;
@@ -735,7 +735,9 @@ public class ContainerImpl implements Container {
 	        	while(configuredMemory < limitedMemory){
 	        		limitedMemory = limitedMemory - 512;
 	        		DockerCommandMemory(limitedMemory);
-	        	}
+                    LOG.info("$$$  "+this.app+" "+this.name+" "+this.limitedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
+
+                }
                 LOG.info("shrink finish configure: "+configuredMemory);
                 LOG.info("shrink finish limited:   "+limitedMemory);
 	        	DockerCommandMemory(configuredMemory);
