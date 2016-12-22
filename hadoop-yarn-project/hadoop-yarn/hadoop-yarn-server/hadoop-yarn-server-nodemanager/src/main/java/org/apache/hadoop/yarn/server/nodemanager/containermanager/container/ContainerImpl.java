@@ -702,7 +702,7 @@ public class ContainerImpl implements Container {
 		
 		private void updateConfiguredMemory(){
 			
-	        LOG.info("container: "+name+" old: "+limitedMemory
+	        LOG.info("update container memory: "+name+" old: "+limitedMemory
 	        		 +"new: "+currentConfiguredMemory);
 
             double up  =0;
@@ -710,10 +710,12 @@ public class ContainerImpl implements Container {
             //moving avareage
             for(int i=1; i <= this.currentConfiguredMemory.size();i++){
                 down=down + i;
-                up  =up   + i*this.currentConfiguredMemory.get(i);
+                up  =up   + i*this.currentConfiguredMemory.get(i-1);
             }
 
             long configuredMemory=(long)(up/down);
+            this.currentConfiguredMemory.clear();
+            LOG.info("new cmemory: "+configuredMemory);
 	        
 	        if(configuredMemory > limitedMemory){
 	        	DockerCommandMemory(configuredMemory);
