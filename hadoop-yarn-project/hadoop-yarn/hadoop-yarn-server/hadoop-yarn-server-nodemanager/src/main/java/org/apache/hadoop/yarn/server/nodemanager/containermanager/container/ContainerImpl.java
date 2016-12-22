@@ -714,6 +714,7 @@ public class ContainerImpl implements Container {
             }
 
             long configuredMemory=(long)(up/down);
+            int size=this.currentConfiguredMemory.size();
             this.currentConfiguredMemory.clear();
             LOG.info("new cmemory: "+configuredMemory);
 	        
@@ -724,7 +725,11 @@ public class ContainerImpl implements Container {
 	        	DockerCommandCpuQuota(-1);
 	        	isSwapping=false;
 	        }else if(configuredMemory < limitedMemory){
-	        	//whatever we throttle cpu here
+                if(configuredMemory < limitedMemory*0.5 && size < 3){
+                    LOG.info("delay shrink");
+                    return;
+                }
+                //whatever we throttle cpu here
                 LOG.info("stop cpu by reclaim "+name);
                 LOG.info(name+" shrink ");
 	        	DockerCommandCpuQuota(1000);
