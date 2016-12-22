@@ -590,7 +590,7 @@ public class ContainerImpl implements Container {
 		
 		private String dockerId=null;
 		
-		private long currentConfiguredMemory;
+		private List<Long> currentConfiguredMemory;
 		
 		private long currentUsedMemory;
 		
@@ -616,11 +616,12 @@ public class ContainerImpl implements Container {
 			this.app  = containerId.getApplicationAttemptId().getApplicationId().toString();
 			LOG.info("container id:"+this.name);
 			//in terms of M
+            currentConfiguredMemory =new ArrayList<Long>();
 			if(isFlexible){
 			//TODO add this value to configure
-			  this.currentConfiguredMemory = 4096;
+			  this.currentConfiguredMemory.add((long)4096);
 			}else{
-			  this.currentConfiguredMemory = resource.getMemory();
+			  this.currentConfiguredMemory.add((long)resource.getMemory());
 			}
 			LOG.info("initialize configured: "+name+currentConfiguredMemory);
 			this.isSwapping =false;
@@ -703,29 +704,39 @@ public class ContainerImpl implements Container {
 			
 	        LOG.info("container: "+name+" old: "+limitedMemory
 	        		 +"new: "+currentConfiguredMemory);
+
+            double up  =0;
+            double down=0;
+            //moving avareage
+            for(int i=1; i <= this.currentConfiguredMemory.size();i++){
+                down=down + i;
+                up  =up   + i*this.currentConfiguredMemory.get(i);
+            }
+
+            long configuredMemory=(long)(up/down);
 	        
-	        if(currentConfiguredMemory > limitedMemory){
-	        	DockerCommandMemory(currentConfiguredMemory);
+	        if(configuredMemory > limitedMemory){
+	        	DockerCommandMemory(configuredMemory);
 	        	//whatever we open cpu here
 	        	LOG.info("release cpu by ballon "+name);
 	        	DockerCommandCpuQuota(-1);
 	        	isSwapping=false;
-	        }else if(currentConfiguredMemory < limitedMemory){
+	        }else if(configuredMemory < limitedMemory){
 	        	//whatever we throttle cpu here
                 LOG.info("stop cpu by reclaim "+name);
                 LOG.info(name+" shrink ");
 	        	DockerCommandCpuQuota(1000);
 	        	isSwapping=true;
-                LOG.info("shrink start configure: "+currentConfiguredMemory);
+                LOG.info("shrink start configure: "+configuredMemory);
                 LOG.info("shrink start limited:   "+limitedMemory);
                 this.isShrinking=true;
-	        	while(currentConfiguredMemory < limitedMemory){
+	        	while(configuredMemory < limitedMemory){
 	        		limitedMemory = limitedMemory - 512;
 	        		DockerCommandMemory(limitedMemory);
 	        	}
-                LOG.info("shrink finish configure: "+currentConfiguredMemory);
+                LOG.info("shrink finish configure: "+configuredMemory);
                 LOG.info("shrink finish limited:   "+limitedMemory);
-	        	DockerCommandMemory(currentConfiguredMemory);
+	        	DockerCommandMemory(configuredMemory);
                 LOG.info(name+" finish shrinking");
                 this.isShrinking=false;
 	        }
@@ -812,13 +823,8 @@ public class ContainerImpl implements Container {
 		}
 		
 		public void setConfiguredMemory(long configuredMemory){
-            //do nothing, if it is shrinking and it's a ballooning
-            if(isShrinking && configuredMemory > this.currentConfiguredMemory){
-                LOG.info("quit configuring for: "+name);
-                return;
-            }
-			
-			this.currentConfiguredMemory = configuredMemory;
+
+			this.currentConfiguredMemory.add(configuredMemory);
 			isUpdated=true;
 		}
 		
@@ -851,7 +857,7 @@ public class ContainerImpl implements Container {
 		    long left=Math.max(getResource().getMemory(),limitedMemory-claimSize);
 		    long reclaimed=limitedMemory-left;
 
-		    currentConfiguredMemory=left;
+		    currentConfiguredMemory.add(left);
 		    isUpdated=true;
             LOG.info(name +" creclaim  reclaimed: "+reclaimed);
             LOG.info(name +" creclaim  left: "+left);
