@@ -603,6 +603,8 @@ public class ContainerImpl implements Container {
 		private boolean isRunning;
 		
 		private boolean isUpdated;
+
+        private boolean isShrinking;
 		
 		private int MIN_FOOTPRINT = 256;
 		
@@ -621,7 +623,8 @@ public class ContainerImpl implements Container {
 			  this.currentConfiguredMemory = resource.getMemory();
 			}
 			LOG.info("initialize configured: "+name+currentConfiguredMemory);
-			this.isSwapping=false;
+			this.isSwapping =false;
+            this.isShrinking=false;
 			this.currentUsedMemory=0;
 			this.currentUsedSwap=0;
 			
@@ -713,16 +716,18 @@ public class ContainerImpl implements Container {
                 LOG.info(name+" shrink ");
 	        	DockerCommandCpuQuota(1000);
 	        	isSwapping=true;
+                LOG.info("shrink start configure: "+currentConfiguredMemory);
+                LOG.info("shrink start limited:   "+limitedMemory);
+                this.isShrinking=true;
 	        	while(currentConfiguredMemory < limitedMemory){
 	        		limitedMemory = limitedMemory - 512;
-                    LOG.info("shrink configure: "+currentConfiguredMemory);
-                    LOG.info("shrink limited:   "+limitedMemory);
 	        		DockerCommandMemory(limitedMemory);
 	        	}
-                LOG.info("shrink configure: "+currentConfiguredMemory);
-                LOG.info("shrink limited:   "+limitedMemory);
+                LOG.info("shrink finish configure: "+currentConfiguredMemory);
+                LOG.info("shrink finish limited:   "+limitedMemory);
 	        	DockerCommandMemory(currentConfiguredMemory);
                 LOG.info(name+" finish shrinking");
+                this.isShrinking=false;
 	        }
 	        
 		}
@@ -807,6 +812,11 @@ public class ContainerImpl implements Container {
 		}
 		
 		public void setConfiguredMemory(long configuredMemory){
+            //do nothing, if it is shrinking
+            if(isShrinking){
+                LOG.info("quit configuring for: "+name);
+                return;
+            }
 			
 			this.currentConfiguredMemory = configuredMemory;
 			isUpdated=true;
