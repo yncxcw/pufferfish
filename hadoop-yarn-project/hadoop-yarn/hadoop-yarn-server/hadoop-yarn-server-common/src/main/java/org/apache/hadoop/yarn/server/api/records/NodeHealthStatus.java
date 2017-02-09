@@ -47,11 +47,12 @@ public abstract class NodeHealthStatus {
 
   @Private
   public static NodeHealthStatus newInstance(boolean isNodeHealthy,
-      String healthReport, long lastHealthReport) {
+      String healthReport, long lastHealthReport, long actualMemory) {
     NodeHealthStatus status = Records.newRecord(NodeHealthStatus.class);
     status.setIsNodeHealthy(isNodeHealthy);
     status.setHealthReport(healthReport);
     status.setLastHealthReportTime(lastHealthReport);
+    status.setActualMemory(actualMemory);
     return status;
   }
 
@@ -90,4 +91,18 @@ public abstract class NodeHealthStatus {
   @Private
   @Unstable
   public abstract void setLastHealthReportTime(long lastHealthReport);
+  /**
+   * Get the <em>actual memory is being used</em> at which the heal report was received
+   * This feature was designed to support mballoon project(since each node has actual or assgined memory )
+   * @return
+   */
+  
+  @Private
+  @Unstable
+  public abstract long getActualMemory();
+  
+  
+  @Private
+  @Unstable
+  public abstract void setActualMemory(long actualMemory);
 }

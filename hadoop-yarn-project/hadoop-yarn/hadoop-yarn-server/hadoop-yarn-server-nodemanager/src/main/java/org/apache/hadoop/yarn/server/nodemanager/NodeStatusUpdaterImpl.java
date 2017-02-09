@@ -352,6 +352,9 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
     nodeHealthStatus.setIsNodeHealthy(healthChecker.isHealthy());
     nodeHealthStatus.setLastHealthReportTime(healthChecker
       .getLastHealthReportTime());
+    //piggy back to resource manager the actual memory usage.
+    nodeHealthStatus.setActualMemory(context.getNodeMemoryManager().getCurrentActualMemory());
+    
     if (LOG.isDebugEnabled()) {
       LOG.debug("Node's health-status : " + nodeHealthStatus.getIsNodeHealthy()
           + ", " + nodeHealthStatus.getHealthReport());

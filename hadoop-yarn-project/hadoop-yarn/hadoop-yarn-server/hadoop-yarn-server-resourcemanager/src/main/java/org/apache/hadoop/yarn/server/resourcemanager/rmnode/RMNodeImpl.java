@@ -105,6 +105,9 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
   private String healthReport;
   private long lastHealthReportTime;
   private String nodeManagerVersion;
+  
+  //current actual used memory
+  private long actualUsedMemory;
 
   /* set of containers that have just launched */
   private final Set<ContainerId> launchedContainers =
@@ -246,6 +249,7 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
     this.writeLock = lock.writeLock();
 
     this.stateMachine = stateMachineFactory.make(this);
+    this.actualUsedMemory=0;
     
     this.nodeUpdateQueue = new ConcurrentLinkedQueue<UpdatedContainerInfo>();  
   }
@@ -804,6 +808,9 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
         return NodeState.UNHEALTHY;
       }
 
+      //update actual memory usage
+      rmNode.actualUsedMemory=statusEvent.getNodeHealthStatus().getActualMemory();
+      
       rmNode.handleContainerStatus(statusEvent.getContainers());
 
       if(rmNode.nextHeartBeat) {
@@ -934,6 +941,12 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
       nodeUpdateQueue.add(new UpdatedContainerInfo(newlyLaunchedContainers,
           completedContainers));
     }
+  }
+
+@Override
+public long getCurrentActualMemory() {
+	
+	return this.actualUsedMemory;
   }
 
  }

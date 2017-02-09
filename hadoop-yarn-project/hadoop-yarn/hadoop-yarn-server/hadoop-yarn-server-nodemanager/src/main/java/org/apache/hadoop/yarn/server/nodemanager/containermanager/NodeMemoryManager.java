@@ -94,6 +94,7 @@ public class NodeMemoryManager {
 	 }
 	  
 	 
+	 
 	 private void updateMetrics(){
 		 try {
 			 this.writeLock.lock();
@@ -314,5 +315,11 @@ public class NodeMemoryManager {
 
 	return; 
  }	 
+ 
+ 
+ public long getCurrentActualMemory(){
+	 
+	 return this.nodeCurrentUsed;
+ }
 	 
 }

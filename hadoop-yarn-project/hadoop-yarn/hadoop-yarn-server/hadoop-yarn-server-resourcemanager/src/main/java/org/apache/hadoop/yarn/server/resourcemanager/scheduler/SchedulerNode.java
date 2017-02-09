@@ -57,9 +57,18 @@ public abstract class SchedulerNode {
   private Resource totalResourceCapability;
   private RMContainer reservedContainer;
   private volatile int numContainers;
+  private long currentActualMemory;
 
 
-  /* set of containers that are allocated containers */
+  public long getCurrentActualMemory() {
+	return currentActualMemory;
+   }
+
+  public void setCurrentActualMemory(long currentActualMemory) {
+	this.currentActualMemory = currentActualMemory;
+   }
+
+/* set of containers that are allocated containers */
   private final Map<ContainerId, RMContainer> launchedContainers =
       new HashMap<ContainerId, RMContainer>();
 
@@ -79,6 +88,8 @@ public abstract class SchedulerNode {
       nodeName = rmNode.getHostName();
     }
     this.labels = ImmutableSet.copyOf(labels);
+    
+    this.currentActualMemory =0;
   }
 
   public SchedulerNode(RMNode node, boolean usePortForNodeName) {

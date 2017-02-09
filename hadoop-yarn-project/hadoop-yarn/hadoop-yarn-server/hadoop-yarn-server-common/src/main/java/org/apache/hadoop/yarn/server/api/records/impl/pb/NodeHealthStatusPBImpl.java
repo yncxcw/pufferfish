@@ -128,4 +128,17 @@ public class NodeHealthStatusPBImpl extends NodeHealthStatus {
     this.builder.setLastHealthReportTime((lastHealthReport));
   }
 
+  @Override
+  public void setActualMemory(long actualMemory){
+	maybeInitBuilder();
+	this.builder.setActualMemory(actualMemory);
+  }
+  
+  @Override
+  public long getActualMemory(){
+	 NodeHealthStatusProtoOrBuilder p =
+		        this.viaProto ? this.proto : this.builder;
+	 return (p.getActualMemory());  
+	  
+  }
 }

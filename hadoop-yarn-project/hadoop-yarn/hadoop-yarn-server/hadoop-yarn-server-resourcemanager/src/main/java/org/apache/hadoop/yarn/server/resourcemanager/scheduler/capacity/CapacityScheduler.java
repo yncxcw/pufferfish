@@ -1024,6 +1024,9 @@ public class CapacityScheduler extends
 
     FiCaSchedulerNode node = getNode(nm.getNodeID());
     
+    //update actual memory usage, we guarantee we always get newest value
+    node.setCurrentActualMemory(nm.getCurrentActualMemory());
+    
     List<UpdatedContainerInfo> containerInfoList = nm.pullContainerUpdates();
     List<ContainerStatus> newlyLaunchedContainers = new ArrayList<ContainerStatus>();
     List<ContainerStatus> completedContainers = new ArrayList<ContainerStatus>();

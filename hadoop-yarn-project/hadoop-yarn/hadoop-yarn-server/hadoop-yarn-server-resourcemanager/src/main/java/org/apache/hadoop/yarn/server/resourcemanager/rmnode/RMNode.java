@@ -147,4 +147,10 @@ public interface RMNode {
    * @return labels in this node
    */
   public Set<String> getNodeLabels();
+  
+  /**
+   * Get actual current memory usage for MBalloon
+   * @return
+   */
+  public long getCurrentActualMemory();
 }
