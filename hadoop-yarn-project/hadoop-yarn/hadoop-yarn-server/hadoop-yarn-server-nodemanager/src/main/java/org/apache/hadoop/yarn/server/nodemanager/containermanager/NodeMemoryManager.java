@@ -319,7 +319,7 @@ public class NodeMemoryManager {
  
  public long getCurrentActualMemory(){
 	 
-	 return this.nodeCurrentUsed;
+	 return this.nodeCurrentAssigned;
  }
 	 
 }

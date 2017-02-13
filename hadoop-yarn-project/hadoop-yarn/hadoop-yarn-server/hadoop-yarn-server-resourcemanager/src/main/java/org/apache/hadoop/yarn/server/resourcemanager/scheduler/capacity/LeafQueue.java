@@ -94,6 +94,8 @@ public class LeafQueue extends AbstractCSQueue {
   
   private int nodeLocalityDelay;
   private volatile boolean rackLocalityFullReset;
+  
+  private boolean isMemoryAware;
 
   Set<FiCaSchedulerApp> activeApplications;
   Map<ApplicationAttemptId, FiCaSchedulerApp> applicationAttemptMap = 
@@ -1474,7 +1476,12 @@ public class LeafQueue extends AbstractCSQueue {
     }
     
     Resource capability = request.getCapability();
-    Resource available = node.getAvailableResource();
+    Resource available  = node.getAvailableResource();
+    //memory awareness code place here:
+    Resource actualResource  = Resource.newInstance((int)node.getCurrentActualMemory(),
+    		                                       available.getVirtualCores());
+    		
+    
     Resource totalResource = node.getTotalResource();
 
     if (!Resources.lessThanOrEqual(resourceCalculator, clusterResource,
@@ -1504,11 +1511,35 @@ public class LeafQueue extends AbstractCSQueue {
     // Can we allocate a container on this node?
     int availableContainers = 
         resourceCalculator.computeAvailableContainers(available, capability);
+    
+    int actualAvailable       =
+    	resourceCalculator.computeAvailableContainers(actualResource, capability);
 
+    boolean shouldAllocation=false;
+    //memory aware allocation
+    if(isMemoryAware){
+    	if(actualAvailable > 0){
+    	 shouldAllocation = true;  	
+    	}else{
+    	  //we have been waiting for so long, scheduler anyway
+    	  if(application.getSchedulingOpportunities(priority) 
+    			   >= scheduler.getNumClusterNodes()){
+    		  shouldAllocation = true;
+    	  //wait for next round
+    	   }else{
+    		  shouldAllocation = false;
+    		  application.addSchedulingOpportunity(priority);
+    	   }	
+    	}
+    	
+    }else{
+    	shouldAllocation = availableContainers > 0 ? true:false;	
+    }
+    
     boolean needToUnreserve = Resources.greaterThan(resourceCalculator,clusterResource,
         currentResoureLimits.getAmountNeededUnreserve(), Resources.none());
 
-    if (availableContainers > 0) {
+    if (shouldAllocation) {
       // Allocate...
 
       // Did we previously reserve containers at this 'priority'?

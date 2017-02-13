@@ -226,6 +226,12 @@ public class MockNodes {
       }
       return CommonNodeLabelsManager.EMPTY_STRING_SET;
     }
+
+	@Override
+	public long getCurrentActualMemory() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
   };
 
   private static RMNode buildRMNode(int rack, final Resource perNode,
