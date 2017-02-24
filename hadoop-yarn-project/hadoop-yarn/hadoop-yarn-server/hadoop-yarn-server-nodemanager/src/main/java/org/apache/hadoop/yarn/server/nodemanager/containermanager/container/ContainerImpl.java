@@ -678,7 +678,7 @@ public class ContainerImpl implements Container {
 				}
 				
 				
-				LOG.info("$$$  "+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
+				//LOG.info("$$$  "+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
 				
 				//if we come here it means we need to sleep for 2s
 				 try {
@@ -721,7 +721,7 @@ public class ContainerImpl implements Container {
 	        if(configuredMemory > limitedMemory){
 	        	DockerCommandMemory(configuredMemory);
 	        	//whatever we open cpu here
-	        	LOG.info("release cpu by ballon "+name);
+	        	//LOG.info("release cpu by ballon "+name);
 	        	DockerCommandCpuQuota(-1);
 	        	isSwapping=false;
 	        }else if(configuredMemory < limitedMemory){
@@ -730,12 +730,12 @@ public class ContainerImpl implements Container {
                     return;
                 }
                 //whatever we throttle cpu here
-                LOG.info("stop cpu by reclaim "+name);
-                LOG.info(name+" shrink ");
+                //LOG.info("stop cpu by reclaim "+name);
+                //LOG.info(name+" shrink ");
 	        	DockerCommandCpuQuota(1000);
 	        	isSwapping=true;
-                LOG.info("shrink start configure: "+configuredMemory);
-                LOG.info("shrink start limited:   "+limitedMemory);
+                //LOG.info("shrink start configure: "+configuredMemory);
+                //LOG.info("shrink start limited:   "+limitedMemory);
                 this.isShrinking=true;
 	        	while(configuredMemory < limitedMemory){
 	        		limitedMemory = limitedMemory - 512;
@@ -743,10 +743,10 @@ public class ContainerImpl implements Container {
                     LOG.info("$$$  "+this.app+" "+this.name+" "+this.limitedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
 
                 }
-                LOG.info("shrink finish configure: "+configuredMemory);
-                LOG.info("shrink finish limited:   "+limitedMemory);
+                //LOG.info("shrink finish configure: "+configuredMemory);
+                //LOG.info("shrink finish limited:   "+limitedMemory);
 	        	DockerCommandMemory(configuredMemory);
-                LOG.info(name+" finish shrinking");
+                //LOG.info(name+" finish shrinking");
                 this.isShrinking=false;
 	        }
 	        
@@ -868,8 +868,8 @@ public class ContainerImpl implements Container {
 
 		    currentConfiguredMemory.add(left);
 		    isUpdated=true;
-            LOG.info(name +" creclaim  reclaimed: "+reclaimed);
-            LOG.info(name +" creclaim  left: "+left);
+            //LOG.info(name +" creclaim  reclaimed: "+reclaimed);
+            //LOG.info(name +" creclaim  left: "+left);
 		    return reclaimed;
 		}
 		

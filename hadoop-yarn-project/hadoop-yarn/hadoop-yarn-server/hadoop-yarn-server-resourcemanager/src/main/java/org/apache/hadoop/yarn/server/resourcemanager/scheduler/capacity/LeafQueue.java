@@ -129,6 +129,7 @@ public class LeafQueue extends AbstractCSQueue {
       String queueName, CSQueue parent, CSQueue old) throws IOException {
     super(cs, queueName, parent, old);
     this.scheduler = cs;
+    this.isMemoryAware = true;
 
     this.activeUsersManager = new ActiveUsersManager(metrics); 
 

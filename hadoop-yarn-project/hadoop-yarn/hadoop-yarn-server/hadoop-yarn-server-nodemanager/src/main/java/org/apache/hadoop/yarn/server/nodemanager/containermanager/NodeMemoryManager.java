@@ -184,7 +184,7 @@ public class NodeMemoryManager {
 		 //usage for this container
 		 double usage    = nodeCurrentUsed*1.0/nodeTotal*1.0;
 		 double assignage= nodeCurrentAssigned*1.0/nodeTotal*1.0;
-		 LOG.info("balloon usage  and assignage:  "+usage+"  "+assignage);
+		// LOG.info("balloon usage  and assignage:  "+usage+"  "+assignage);
 		 if(assignage > RECLAIM_BALLOON_LIMIT){
 			
 			 int memoryClaimed=(int)((assignage-RECLAIM_BALLOON_LIMIT)*nodeTotal);
@@ -223,7 +223,7 @@ public class NodeMemoryManager {
 				   }
 			       long newCntMemory = oldMemory+newMemory;
 
-			        //LOG.info("### container "+cnt.getContainerId()+" ratio "+balloonRatio+" from "+oldMemory+" to "+newCntMemory+" ###");
+			        LOG.info("### container "+cnt.getContainerId()+" ratio "+balloonRatio+" from "+oldMemory+" to "+newCntMemory+" ###");
 			        cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
 			        nodeCurrentAssigned+=newMemory;
 
