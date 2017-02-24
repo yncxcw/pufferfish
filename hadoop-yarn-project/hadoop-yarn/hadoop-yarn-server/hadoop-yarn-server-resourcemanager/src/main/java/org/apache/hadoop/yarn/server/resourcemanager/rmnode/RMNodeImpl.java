@@ -811,6 +811,8 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
       //update actual memory usage
       rmNode.actualUsedMemory=statusEvent.getNodeHealthStatus().getActualMemory();
       
+      //LOG.info("Node :"+rmNode.getHostName()+" Mem usage: "+rmNode.get);
+      
       rmNode.handleContainerStatus(statusEvent.getContainers());
 
       if(rmNode.nextHeartBeat) {

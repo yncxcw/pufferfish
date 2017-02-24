@@ -1519,6 +1519,10 @@ public class LeafQueue extends AbstractCSQueue {
     //memory aware allocation
     if(isMemoryAware){
     	if(actualAvailable > 0){
+    		
+    	 LOG.info("MBalloon Node: "+node.getNodeName()+"memory: "+available.getMemory()+""
+    	 		+ "actual memory: "+actualResource.getMemory());
+    	 
     	 shouldAllocation = true;  	
     	}else{
     	  //we have been waiting for so long, scheduler anyway
