@@ -167,7 +167,9 @@ public abstract class SchedulerNode {
     ++numContainers;
     
     if(rmContainer.isFlexContianer()){
+    	
     	this.curentRunningFlexContainers++;
+    	LOG.info("mbnode: "+this.nodeName+" flex: "+curentRunningFlexContainers);
     }
 
     launchedContainers.put(container.getId(), rmContainer);
@@ -235,6 +237,7 @@ public abstract class SchedulerNode {
     if (null != rmContainer) {
       if(rmContainer.isFlexContianer()){
     	  this.curentRunningFlexContainers--;
+    	  LOG.info("mbnode: "+this.nodeName+" flex: "+curentRunningFlexContainers);
       }	
       updateResource(container);
     }

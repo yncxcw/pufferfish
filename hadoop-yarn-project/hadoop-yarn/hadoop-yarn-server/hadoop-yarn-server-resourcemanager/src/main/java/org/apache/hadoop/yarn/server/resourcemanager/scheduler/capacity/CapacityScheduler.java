@@ -835,7 +835,7 @@ public class CapacityScheduler extends
           queue, queue.getActiveUsersManager(), rmContext);
     
     boolean isFlexApp = rmContext.getRMApps().
-    		              get(applicationAttemptId).getIsFlexibleAllocation();
+    		              get(applicationAttemptId.getApplicationId()).getIsFlexibleAllocation();
     
     //set flexible for containers
     if(isFlexApp){
