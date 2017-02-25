@@ -1550,13 +1550,13 @@ public class LeafQueue extends AbstractCSQueue {
     	  
     	  }else{
     		 //compute average Flex container on each node
-    		 int aveFlexContainers=0; 
+    		 double aveFlexContainers=0; 
     		 int nodeFlexContainers=0;
     		 
     		 for(FiCaSchedulerNode ficaNode : this.csContext.getAllNode()){
         		 aveFlexContainers = aveFlexContainers+ficaNode.getCurrentRunningFlexContainers();
         	  }
-        	  aveFlexContainers =aveFlexContainers/this.csContext.getAllNode().size();
+        	  aveFlexContainers =1.0*aveFlexContainers/this.csContext.getAllNode().size();
     	      nodeFlexContainers=node.getCurrentRunningFlexContainers();
     	      
     	      if(aveFlexContainers >= nodeFlexContainers){
