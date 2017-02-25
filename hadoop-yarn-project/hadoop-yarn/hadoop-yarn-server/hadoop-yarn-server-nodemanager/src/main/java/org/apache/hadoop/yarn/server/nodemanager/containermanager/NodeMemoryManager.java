@@ -1,6 +1,7 @@
 package org.apache.hadoop.yarn.server.nodemanager.containermanager;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -166,7 +167,10 @@ public class NodeMemoryManager {
 	     //LOG.info("memory balloon called");
 		 List<Set<Container>>  swappingContainer= new ArrayList<Set<Container>>();
 		 //sort app by their launch time
-		 List<Application> swappingApps = (List<Application>)this.context.getApplications().values();
+		 List<Application> swappingApps = new ArrayList<Application>();   
+		 for(Application app : this.context.getApplications().values()){
+			 swappingApps.add(app);
+		 }
 		 
 		 this.updateMetrics();
 		 
