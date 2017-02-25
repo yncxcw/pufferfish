@@ -1767,8 +1767,9 @@ public class CapacityScheduler extends
   }
 
 @Override
-public Set<FiCaSchedulerNode> getAllNode() {
+public Collection<FiCaSchedulerNode> getAllNode() {
 	// TODO Auto-generated method stub
-	return (Set<FiCaSchedulerNode>) nodes.values();
+	return nodes.values();
 }
+
 }

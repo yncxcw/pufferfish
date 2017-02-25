@@ -1559,7 +1559,7 @@ public class LeafQueue extends AbstractCSQueue {
         	  aveFlexContainers =aveFlexContainers/this.csContext.getAllNode().size();
     	      nodeFlexContainers=node.getCurrentRunningFlexContainers();
     	      
-    	      if(aveFlexContainers > nodeFlexContainers){
+    	      if(aveFlexContainers >= nodeFlexContainers){
     	    	  shouldAllocation = true;
     	    	  LOG.info("memflexy ave: "+aveFlexContainers+
     	    			  " node: "+nodeFlexContainers+" app: "+application.getApplicationId());
