@@ -1531,7 +1531,7 @@ public class LeafQueue extends AbstractCSQueue {
     int availableContainers = 
         resourceCalculator.computeAvailableContainers(available, capability);
     
-    int actualAvailable       =
+    int actualAvailable     =
     	resourceCalculator.computeAvailableContainers(actualResource, capability);
 
     boolean isFlex = application.getFlex();
@@ -1546,7 +1546,7 @@ public class LeafQueue extends AbstractCSQueue {
     	  if(actualAvailable <= 0){
     		 
     		  shouldAllocation=false;
-    		  LOG.info("memflexn available memory give up for "+application.getApplicationAttemptId());
+    		  LOG.info("memflexn actual memory give up for "+application.getApplicationAttemptId());
     	  
     	  }else{
     		 //compute average Flex container on each node
@@ -1571,13 +1571,19 @@ public class LeafQueue extends AbstractCSQueue {
     	 
     	  //for regular containers
     	  }else{
+    		if(availableContainers <= 0){
+    			
+    		  shouldAllocation=false;
+    		  LOG.info("memregn available memory give up for "+application.getApplicationAttemptId());
+    		}else{
     		//try to not to shrink
     	    if(actualAvailable > 0){
     	    	shouldAllocation = true;
     	    	LOG.info("memregy app: "+application.getApplicationId());
     	    }else{
     	    	shouldAllocation = WaitIncreaseSchedulingOpportunity(application,priority);
-    	    }	
+    	    }
+    	  }
     	}
     }
     boolean needToUnreserve = Resources.greaterThan(resourceCalculator,clusterResource,

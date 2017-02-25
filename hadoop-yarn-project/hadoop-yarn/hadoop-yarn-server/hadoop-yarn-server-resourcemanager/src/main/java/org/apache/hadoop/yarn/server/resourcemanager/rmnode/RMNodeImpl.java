@@ -249,7 +249,7 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
     this.writeLock = lock.writeLock();
 
     this.stateMachine = stateMachineFactory.make(this);
-    this.actualUsedMemory=0;
+    this.actualUsedMemory=capability.getMemory();
     
     this.nodeUpdateQueue = new ConcurrentLinkedQueue<UpdatedContainerInfo>();  
   }
@@ -808,8 +808,8 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
         return NodeState.UNHEALTHY;
       }
 
-      //update actual memory usage
-      rmNode.actualUsedMemory=statusEvent.getNodeHealthStatus().getActualMemory();
+      //update actual memory usage total - actual_used
+      rmNode.actualUsedMemory=rmNode.totalCapability.getMemory() - statusEvent.getNodeHealthStatus().getActualMemory();
       
       LOG.info("MBalloon NodeImpl :"+rmNode.getHostName()+"get actual Mem usage: "+rmNode.actualUsedMemory);
       
