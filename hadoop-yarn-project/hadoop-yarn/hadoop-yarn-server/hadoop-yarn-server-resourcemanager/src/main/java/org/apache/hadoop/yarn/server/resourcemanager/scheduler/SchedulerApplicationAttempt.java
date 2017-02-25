@@ -78,6 +78,9 @@ public class SchedulerApplicationAttempt {
   protected long lastMemoryAggregateAllocationUpdateTime = 0;
   private long lastMemorySeconds = 0;
   private long lastVcoreSeconds = 0;
+  
+  //if it is a flex application
+  private boolean isFlex  = false;
 
   protected final AppSchedulingInfo appSchedulingInfo;
   protected ApplicationAttemptId attemptId;
@@ -147,6 +150,16 @@ public class SchedulerApplicationAttempt {
             appSubmissionContext.getLogAggregationContext();
       }
     }
+  }
+  
+  public boolean getFlex(){
+	  
+	  return this.isFlex;
+  }
+  
+  public void setFlex(){
+	  
+	  this.isFlex = true;
   }
   
   /**

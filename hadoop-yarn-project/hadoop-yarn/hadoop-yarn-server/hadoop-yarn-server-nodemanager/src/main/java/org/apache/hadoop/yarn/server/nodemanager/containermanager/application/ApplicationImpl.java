@@ -54,6 +54,8 @@ import org.apache.hadoop.yarn.state.MultipleArcTransition;
 import org.apache.hadoop.yarn.state.SingleArcTransition;
 import org.apache.hadoop.yarn.state.StateMachine;
 import org.apache.hadoop.yarn.state.StateMachineFactory;
+import org.apache.hadoop.yarn.util.Clock;
+import org.apache.hadoop.yarn.util.SystemClock;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -72,6 +74,9 @@ public class ApplicationImpl implements Application {
   private final ReadLock readLock;
   private final WriteLock writeLock;
   private final Context context;
+  private long applicationLaunchTime;
+  
+  private static Clock clock = new SystemClock();
  
 
   private static final Log LOG = LogFactory.getLog(ApplicationImpl.class);
@@ -92,6 +97,7 @@ public class ApplicationImpl implements Application {
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     readLock = lock.readLock();
     writeLock = lock.writeLock();
+    
     stateMachine = stateMachineFactory.make(this);
   }
   
@@ -328,6 +334,8 @@ public class ApplicationImpl implements Application {
       SingleArcTransition<ApplicationImpl, ApplicationEvent> {
     @Override
     public void transition(ApplicationImpl app, ApplicationEvent event) {
+      //record launch time
+      app.applicationLaunchTime = clock.getTime();
       // Start all the containers waiting for ApplicationInit
       for (Container container : app.containers.values()) {
         app.dispatcher.getEventHandler().handle(new ContainerInitEvent(
@@ -486,4 +494,12 @@ public class ApplicationImpl implements Application {
       this.readLock.unlock();
     }
   }
+
+
+
+@Override
+public long getApplicationLaunchTime() {
+	
+	return this.applicationLaunchTime;
+}
 }

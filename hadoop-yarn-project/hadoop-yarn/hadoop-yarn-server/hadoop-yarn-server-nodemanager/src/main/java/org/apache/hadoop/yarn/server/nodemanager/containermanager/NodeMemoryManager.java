@@ -164,22 +164,37 @@ public class NodeMemoryManager {
 	 //of its demand
 	 public void MemoryBalloon(){
 	     //LOG.info("memory balloon called");
-		 List<Container>  swappingContainer= new ArrayList<Container>();
+		 List<Set<Container>>  swappingContainer= new ArrayList<Set<Container>>();
+		 //sort app by their launch time
+		 List<Application> swappingApps = (List<Application>)this.context.getApplications().values();
 		 
 		 this.updateMetrics();
 		 
-		 for(Entry<ContainerId, Long> entry: this.containerToSwap.entrySet()){
-			 ContainerId containerId=entry.getKey();
-			 swappingContainer.add(this.context.getContainers().get(containerId));
-		 }
-		 
-		 //sort swapping container by its starting time
-		 Collections.sort(swappingContainer, new Comparator<Container>() {
+		//sort swapping apps by its starting time
+		 Collections.sort(swappingApps, new Comparator<Application>() {
 		        @Override
-		        public int compare(final Container object1, final Container object2) {
-		        return Long.compare(object1.getLaunchStartTime(), object2.getLaunchStartTime());
+		        public int compare(final Application object1, final Application object2) {
+		        return Long.compare(object1.getApplicationLaunchTime(), object2.getApplicationLaunchTime());
 		        }
 		  } );
+		 for(Application application : swappingApps){
+		 
+			 Set<Container> scontainers= new HashSet<Container>();
+			 //stupid iterate, very expensive
+			 for(Entry<ContainerId, Long> entry: this.containerToSwap.entrySet()){
+				 ContainerId containerId=entry.getKey();
+				 if(containerId.getApplicationAttemptId().getApplicationId() == application.getAppId()){
+				      scontainers.add(this.context.getContainers().get(containerId));
+				      LOG.info("## swapping container add :"+containerId);
+				 }
+			  }
+			 
+			 if(scontainers.size() > 0){
+				 swappingContainer.add(scontainers);
+			 }
+		 
+		 }
+		 
 		 //out of the limit, we do nothing, since ContainerImpl will throttle the cpu
 		 //usage for this container
 		 double usage    = nodeCurrentUsed*1.0/nodeTotal*1.0;
@@ -201,15 +216,15 @@ public class NodeMemoryManager {
 		 //If we have available memory, we will choose memory hungry container to balloon
 		 //earliest balloon first
 		 
-		  int swappingSize=0;
-		  if(swappingContainer.size() > 0){
-			 // LOG.info("swapping container size "+swappingContainer.size());
-		  }
-		  for(Container cnt : swappingContainer){
+		  
+		//int swappingSize=0;
+		for(Set<Container> cnts: swappingContainer){
+		  //ballooning containers belonging to same app
+		  for(Container cnt : cnts){
 			    //compute new memory after balloon
 			    //LOG.info("cached swapping container: "+cnt.getContainerId()+"  ratio:"+balloonRatio);
 		       if(cnt.getContainerMonitor().getIsSwapping()){
-		    	   swappingSize++;
+		    	   //swappingSize++;
 			       int oldMemory     = (int) cnt.getContainerMonitor().getCurrentLimitedMemory();
 			       int newMemory     = (int) (oldMemory*balloonRatio);
 				   int available     = (int) (nodeTotal*STOP_BALLOON_LIMIT-nodeCurrentAssigned);
@@ -228,12 +243,11 @@ public class NodeMemoryManager {
 			        nodeCurrentAssigned+=newMemory;
 
 		        }
-			    balloonRatio/=8;
-			    
 		  }
-		  if(swappingSize > 0){
-		      //LOG.info("swapping size: "+swappingSize);
-		  }
+		  balloonRatio/=8;
+		  
+		}
+		  
  }
 	 
  public void MemoryReclaim(int requestSize){

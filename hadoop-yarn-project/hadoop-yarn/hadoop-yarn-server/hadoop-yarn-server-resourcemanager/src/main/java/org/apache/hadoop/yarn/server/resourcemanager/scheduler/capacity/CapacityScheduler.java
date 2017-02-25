@@ -833,6 +833,16 @@ public class CapacityScheduler extends
     FiCaSchedulerApp attempt =
         new FiCaSchedulerApp(applicationAttemptId, application.getUser(),
           queue, queue.getActiveUsersManager(), rmContext);
+    
+    boolean isFlexApp = rmContext.getRMApps().
+    		              get(applicationAttemptId).getIsFlexibleAllocation();
+    
+    //set flexible for containers
+    if(isFlexApp){
+    	attempt.setFlex();
+    }	
+    
+    		
     if (transferStateFromPreviousAttempt) {
       attempt.transferStateFromPreviousAttempt(application
         .getCurrentAppAttempt());
@@ -1755,4 +1765,10 @@ public class CapacityScheduler extends
     }
     return ret;
   }
+
+@Override
+public Set<FiCaSchedulerNode> getAllNode() {
+	// TODO Auto-generated method stub
+	return (Set<FiCaSchedulerNode>) nodes.values();
+}
 }

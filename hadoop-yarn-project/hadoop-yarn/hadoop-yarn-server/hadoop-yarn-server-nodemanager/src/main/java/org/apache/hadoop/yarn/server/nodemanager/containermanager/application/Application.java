@@ -34,5 +34,7 @@ public interface Application extends EventHandler<ApplicationEvent> {
   ApplicationId getAppId();
   
   ApplicationState getApplicationState();
+  
+  long getApplicationLaunchTime();
 
 }

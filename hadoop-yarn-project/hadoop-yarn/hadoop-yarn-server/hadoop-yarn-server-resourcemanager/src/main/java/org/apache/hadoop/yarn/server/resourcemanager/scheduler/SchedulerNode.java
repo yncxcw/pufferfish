@@ -58,11 +58,17 @@ public abstract class SchedulerNode {
   private RMContainer reservedContainer;
   private volatile int numContainers;
   private long currentActualMemory;
+  private int  curentRunningFlexContainers;
 
 
   public long getCurrentActualMemory() {
-	return currentActualMemory;
+	return  currentActualMemory;
    }
+  
+  public int getCurrentRunningFlexContainers(){
+	  
+	  return curentRunningFlexContainers;
+  }
 
   public void setCurrentActualMemory(long currentActualMemory) {
 	this.currentActualMemory = currentActualMemory;
@@ -90,6 +96,7 @@ public abstract class SchedulerNode {
     this.labels = ImmutableSet.copyOf(labels);
     
     this.currentActualMemory =0;
+    this.curentRunningFlexContainers=0;
   }
 
   public SchedulerNode(RMNode node, boolean usePortForNodeName) {
@@ -158,6 +165,10 @@ public abstract class SchedulerNode {
     Container container = rmContainer.getContainer();
     deductAvailableResource(container.getResource());
     ++numContainers;
+    
+    if(rmContainer.isFlexContianer()){
+    	this.curentRunningFlexContainers++;
+    }
 
     launchedContainers.put(container.getId(), rmContainer);
 
@@ -220,7 +231,11 @@ public abstract class SchedulerNode {
     }
 
     /* remove the containers from the nodemanger */
-    if (null != launchedContainers.remove(container.getId())) {
+    RMContainer rmContainer = launchedContainers.remove(container.getId());
+    if (null != rmContainer) {
+      if(rmContainer.isFlexContianer()){
+    	  this.curentRunningFlexContainers--;
+      }	
       updateResource(container);
     }
 

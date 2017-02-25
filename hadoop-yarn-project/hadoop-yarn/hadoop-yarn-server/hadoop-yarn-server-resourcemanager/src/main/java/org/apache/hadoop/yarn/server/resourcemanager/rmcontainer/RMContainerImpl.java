@@ -165,6 +165,7 @@ public class RMContainerImpl implements RMContainer {
   private ContainerStatus finishedStatus;
   private boolean isAMContainer;
   private List<ResourceRequest> resourceRequests;
+  private boolean isFlexContainer;
 
   private boolean saveNonAMContainerMetaInfo;
 
@@ -645,4 +646,16 @@ public class RMContainerImpl implements RMContainer {
       readLock.unlock();
     }
   }
+
+@Override
+public boolean isFlexContianer() {
+	// TODO Auto-generated method stub
+	return isFlexContainer;
+}
+
+@Override
+public void setFlexContainer() {
+	isFlexContainer = true;
+	
+}
 }

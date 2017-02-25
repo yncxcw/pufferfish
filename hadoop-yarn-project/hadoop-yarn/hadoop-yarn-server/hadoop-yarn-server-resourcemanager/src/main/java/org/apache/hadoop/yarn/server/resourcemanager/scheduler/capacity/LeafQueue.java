@@ -1451,6 +1451,24 @@ public class LeafQueue extends AbstractCSQueue {
     return container;
   }
 
+  
+  
+  public boolean WaitIncreaseSchedulingOpportunity(FiCaSchedulerApp application,Priority priority){
+	  //timeout, alloacte whatever
+	  if(application.getSchedulingOpportunities(priority) 
+			   >= scheduler.getNumClusterNodes()){
+		  LOG.info("memrey app: "+application.getApplicationId());
+		  return true;
+	  
+	   //wait for next round
+	   }else{
+		  
+		   LOG.info("memren app: "+application.getApplicationId()
+		    +"retries: "+application.getSchedulingOpportunities(priority));
+		  application.addSchedulingOpportunity(priority);
+		  return false;
+	   }
+  }
 
   private Resource assignContainer(Resource clusterResource, FiCaSchedulerNode node, 
       FiCaSchedulerApp application, Priority priority, 
@@ -1516,31 +1534,52 @@ public class LeafQueue extends AbstractCSQueue {
     int actualAvailable       =
     	resourceCalculator.computeAvailableContainers(actualResource, capability);
 
+    boolean isFlex = application.getFlex();
+    
     boolean shouldAllocation=false;
     //memory aware allocation
     if(isMemoryAware){
-    	if(actualAvailable > 0){
-    		
-    	 LOG.info("MBalloon Node: "+node.getNodeName()+"memory: "+available.getMemory()+""
-    	 		+ "actual memory: "+actualResource.getMemory());
-    	 
-    	 shouldAllocation = true;  	
-    	}else{
-    	  //we have been waiting for so long, scheduler anyway
-    	  if(application.getSchedulingOpportunities(priority) 
-    			   >= scheduler.getNumClusterNodes()){
-    		  shouldAllocation = true;
-    	  //wait for next round
-    	   }else{
-    		  shouldAllocation = false;
-    		  application.addSchedulingOpportunity(priority);
-    	   }	
-    	}
     	
-    }else{
-    	shouldAllocation = availableContainers > 0 ? true:false;	
+    	//if this is a flex application
+    	if(isFlex){
+    	  //give up allocation	
+    	  if(actualAvailable <= 0){
+    		 
+    		  shouldAllocation=false;
+    		  LOG.info("memflexn available memory give up for "+application.getApplicationAttemptId());
+    	  
+    	  }else{
+    		 //compute average Flex container on each node
+    		 int aveFlexContainers=0; 
+    		 int nodeFlexContainers=0;
+    		 
+    		 for(FiCaSchedulerNode ficaNode : this.csContext.getAllNode()){
+        		 aveFlexContainers = aveFlexContainers+ficaNode.getCurrentRunningFlexContainers();
+        	  }
+        	  aveFlexContainers =aveFlexContainers/this.csContext.getAllNode().size();
+    	      nodeFlexContainers=node.getCurrentRunningFlexContainers();
+    	      
+    	      if(aveFlexContainers > nodeFlexContainers){
+    	    	  shouldAllocation = true;
+    	    	  LOG.info("memflexy ave: "+aveFlexContainers+
+    	    			  " node: "+nodeFlexContainers+" app: "+application.getApplicationId());
+    	      }else{
+    	    	  
+    	    	  shouldAllocation = WaitIncreaseSchedulingOpportunity(application,priority);
+    	      }
+    	  }
+    	 
+    	  //for regular containers
+    	  }else{
+    		//try to not to shrink
+    	    if(actualAvailable > 0){
+    	    	shouldAllocation = true;
+    	    	LOG.info("memregy app: "+application.getApplicationId());
+    	    }else{
+    	    	shouldAllocation = WaitIncreaseSchedulingOpportunity(application,priority);
+    	    }	
+    	}
     }
-    
     boolean needToUnreserve = Resources.greaterThan(resourceCalculator,clusterResource,
         currentResoureLimits.getAmountNeededUnreserve(), Resources.none());
 
@@ -1579,10 +1618,16 @@ public class LeafQueue extends AbstractCSQueue {
       // Inform the application
       RMContainer allocatedContainer = 
           application.allocate(type, node, priority, request, container);
+      
+      
 
       // Does the application need this resource?
       if (allocatedContainer == null) {
         return Resources.none();
+      }
+      
+      if(isFlex){
+    	  allocatedContainer.setFlexContainer();
       }
 
       // Inform the node

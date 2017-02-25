@@ -19,6 +19,7 @@
 package org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity;
 
 import java.util.Comparator;
+import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.NodeId;
@@ -61,4 +62,6 @@ public interface CapacitySchedulerContext {
   Comparator<CSQueue> getQueueComparator();
   
   FiCaSchedulerNode getNode(NodeId nodeId);
+  
+  Set<FiCaSchedulerNode> getAllNode();
 }
