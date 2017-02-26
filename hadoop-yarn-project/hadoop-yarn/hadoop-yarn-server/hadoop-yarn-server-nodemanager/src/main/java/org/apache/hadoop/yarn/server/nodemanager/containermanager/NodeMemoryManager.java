@@ -174,6 +174,26 @@ public class NodeMemoryManager {
 		 
 		 this.updateMetrics();
 		 
+		//shrink containers for overprivisoned containers
+		 for(Entry<ContainerId, Long> entry: this.containerToMemoryUsage.entrySet()){
+             ContainerId cntId = entry.getKey();
+             Container container     = this.context.getContainers().get(cntId);
+			 if(this.containerToSwap.containsKey(cntId)){
+				 continue;
+			 }
+			 //process flex overprovisoned container
+			 long limitedMemory = (long) container.getContainerMonitor().getCurrentLimitedMemory();
+			 long usedMemory    = (long) entry.getValue();
+			 long adaptMemory   = (long) 1.1*usedMemory;
+			 if(limitedMemory > adaptMemory){
+				long overprovisoned = limitedMemory - adaptMemory;
+				container.getContainerMonitor().setConfiguredMemory(adaptMemory);
+				this.nodeCurrentAssigned-=overprovisoned;
+				LOG.info("##MBoverprovisoned container: "+cntId+"from "+limitedMemory+" to "+adaptMemory);
+			 }
+		 }
+		 
+		 
 		//sort swapping apps by its starting time
 		 Collections.sort(swappingApps, new Comparator<Application>() {
 		        @Override
