@@ -88,7 +88,7 @@ public class NodeMemoryManager {
 				                                       YarnConfiguration.DEFAULT_RATIO__RECLAIM_BALLOON_LIMIT);
 		 
 		 //keep for 2 minute
-		 this.SWAP_KEEP_TIME          = 150;
+		 this.SWAP_KEEP_TIME          = 60;
 		 ReadWriteLock readWriteLock  = new ReentrantReadWriteLock();
 		 this.readLock  = readWriteLock.readLock();
 		 this.writeLock = readWriteLock.writeLock();
@@ -143,7 +143,7 @@ public class NodeMemoryManager {
 				 
 				//add to swapping group
 				 if(container.getContainerMonitor().getIsSwapping()){
-	                 //LOG.info("add swapping container"+container.getContainerId());
+	                 LOG.info("add swapping container"+container.getContainerId());
 	            	 this.containerToSwap.put(containerId, SWAP_KEEP_TIME);
 	             
 	             //update its waiting time if not swap this round
@@ -154,6 +154,8 @@ public class NodeMemoryManager {
 					 if(this.containerToSwap.get(containerId) <0){
 						 this.containerToSwap.remove(containerId);
 						 LOG.info(containerId+" is removed");
+					 }else{
+						 LOG.info("currentWait: "+containerId+"time: "+currentWaitTime);
 					 }
 				 } 
 			 }
@@ -169,16 +171,22 @@ public class NodeMemoryManager {
 		 //sort app by their launch time
 		 List<Application> swappingApps = new ArrayList<Application>();   
 		 for(Application app : this.context.getApplications().values()){
+			 //LOG.info("add swapping app1: "+app.getAppId());
 			 swappingApps.add(app);
 		 }
 		 
 		 this.updateMetrics();
 		 
 		//shrink containers for overprivisoned containers
+		/*
 		 for(Entry<ContainerId, Long> entry: this.containerToMemoryUsage.entrySet()){
              ContainerId cntId = entry.getKey();
              Container container     = this.context.getContainers().get(cntId);
 			 if(this.containerToSwap.containsKey(cntId)){
+				 continue;
+			 }
+			 
+			 if(!container.isFlexble()){
 				 continue;
 			 }
 			 //process flex overprovisoned container
@@ -193,7 +201,7 @@ public class NodeMemoryManager {
 			 }
 		 }
 		 
-		 
+		*/
 		//sort swapping apps by its starting time
 		 Collections.sort(swappingApps, new Comparator<Application>() {
 		        @Override
@@ -201,15 +209,22 @@ public class NodeMemoryManager {
 		        return Long.compare(object1.getApplicationLaunchTime(), object2.getApplicationLaunchTime());
 		        }
 		  } );
+		 
+		 //LOG.info("swappingApps length: "+swappingApps.size());
+		 
 		 for(Application application : swappingApps){
+			 
+			 //LOG.info("assign swapping app2: "+application.getAppId());
 		 
 			 Set<Container> scontainers= new HashSet<Container>();
 			 //stupid iterate, very expensive
 			 for(Entry<ContainerId, Long> entry: this.containerToSwap.entrySet()){
 				 ContainerId containerId=entry.getKey();
-				 if(containerId.getApplicationAttemptId().getApplicationId() == application.getAppId()){
+				 //LOG.info("continerID "+containerId);
+				 //LOG.info("appid: "+containerId.getApplicationAttemptId().getApplicationId());
+				 if(containerId.getApplicationAttemptId().getApplicationId().equals(application.getAppId())){
 				      scontainers.add(this.context.getContainers().get(containerId));
-				      LOG.info("## swapping container add :"+containerId);
+				     // LOG.info("## swapping container add :"+containerId);
 				 }
 			  }
 			 

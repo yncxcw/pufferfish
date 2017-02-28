@@ -394,12 +394,15 @@ public class ContainersMonitorImpl extends AbstractService implements
         }
         
         //monitor the memory usage for container ballooning
+        //LOG.info("mballoon called");
         context.getNodeMemoryManager().MemoryBalloon();
         
         // Now do the monitoring for the trackingContainers
         // Check memory usage and kill any overflowing containers
         long vmemStillInUsage = 0;
         long pmemStillInUsage = 0;
+        
+        
         for (Iterator<Map.Entry<ContainerId, ProcessTreeInfo>> it =
             trackingContainers.entrySet().iterator(); it.hasNext();) {
 
@@ -498,6 +501,7 @@ public class ContainersMonitorImpl extends AbstractService implements
                   pId, containerId, pTree);
               isMemoryOverLimit = true;
               containerExitStatus = ContainerExitStatus.KILLED_EXCEEDED_VMEM;
+              LOG.info("vmem exceeds: "+containerId);
             } else if (isPmemCheckEnabled()
                 && isProcessTreeOverLimit(containerId.toString(),
                     currentPmemUsage, curRssMemUsageOfAgedProcesses,
@@ -509,6 +513,7 @@ public class ContainersMonitorImpl extends AbstractService implements
                   currentVmemUsage, vmemLimit,
                   currentPmemUsage, pmemLimit,
                   pId, containerId, pTree);
+              LOG.info("pmem exceeds: "+containerId);
               isMemoryOverLimit = true;
               containerExitStatus = ContainerExitStatus.KILLED_EXCEEDED_PMEM;
             }

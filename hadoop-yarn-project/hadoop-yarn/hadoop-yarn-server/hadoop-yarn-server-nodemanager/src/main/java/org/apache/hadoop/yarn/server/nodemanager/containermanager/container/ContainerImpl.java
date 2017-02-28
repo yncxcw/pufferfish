@@ -28,9 +28,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -104,6 +106,7 @@ public class ContainerImpl implements Container {
   private boolean wasLaunched;
   private long containerLaunchStartTime=-1;
   private static Clock clock = new SystemClock();
+  private final int virtualCores;
   
   public ContainerMonitor containerMonitor; 
 
@@ -156,6 +159,9 @@ public class ContainerImpl implements Container {
     this.context = context;
     this.isFlexible=false;
     this.containerMonitor = new ContainerMonitor(isFlexible);
+    this.virtualCores =
+            conf.getInt(
+                YarnConfiguration.NM_VCORES, YarnConfiguration.DEFAULT_NM_VCORES);
     
     stateMachine = stateMachineFactory.make(this);
   }
@@ -658,14 +664,14 @@ public class ContainerImpl implements Container {
 				   if(!isSwapping){
 					 //optimize technique to minimize overhead
 					 LOG.info("stop cpu by monitor "+name);
-					 DockerCommandCpuQuota(1000);
+					 suspendCpus();
 					 isSwapping = true;
 				   }	     
 				}else{
 				   if(isSwapping){
 					 //resume the cpu usage  
 					 LOG.info("release cpu by monitor "+name);
-					 DockerCommandCpuQuota(-1);
+					 resumeCpus();
 					 isSwapping = false;
 				   }
 				   
@@ -678,7 +684,7 @@ public class ContainerImpl implements Container {
 				}
 				
 				
-				//LOG.info("$$$  "+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
+				LOG.info("$$$  "+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
 				
 				//if we come here it means we need to sleep for 2s
 				 try {
@@ -699,6 +705,28 @@ public class ContainerImpl implements Container {
 			//get current used swap
 			getCurrentUsedSwap();
 		}
+		
+		
+		private void suspendCpus(){
+			
+		   DockerCommandCpuQuota(1000);
+		   Set<Integer> cpus=new HashSet<Integer>();
+		   cpus.add(0);
+		   DockerCommandCpuMap(cpus);
+			
+		}
+		
+		private void resumeCpus(){
+			DockerCommandCpuQuota(-1);
+			Set<Integer> cpus=new HashSet<Integer>();
+			for(int i=0;i<virtualCores;i++){
+				cpus.add(i);
+			}
+			DockerCommandCpuMap(cpus);	
+			
+			
+		}
+		
 		
 		private void updateConfiguredMemory(){
 			
@@ -721,8 +749,8 @@ public class ContainerImpl implements Container {
 	        if(configuredMemory > limitedMemory){
 	        	DockerCommandMemory(configuredMemory);
 	        	//whatever we open cpu here
-	        	//LOG.info("release cpu by ballon "+name);
-	        	DockerCommandCpuQuota(-1);
+	        	LOG.info("release cpu by ballon "+name);
+	        	resumeCpus();
 	        	isSwapping=false;
 	        }else if(configuredMemory < limitedMemory){
                 if(configuredMemory < limitedMemory*0.5 && size < 3){
@@ -732,13 +760,14 @@ public class ContainerImpl implements Container {
                 //whatever we throttle cpu here
                 //LOG.info("stop cpu by reclaim "+name);
                 //LOG.info(name+" shrink ");
-	        	DockerCommandCpuQuota(1000);
+	        	suspendCpus();
 	        	isSwapping=true;
                 //LOG.info("shrink start configure: "+configuredMemory);
                 //LOG.info("shrink start limited:   "+limitedMemory);
-                this.isShrinking=true;
+                //this.isShrinking=true;
 	        	while(configuredMemory < limitedMemory){
-	        		limitedMemory = limitedMemory - 512;
+	        		if(limitedMemory - 512 >configuredMemory)
+	        		     limitedMemory = limitedMemory - 512;
 	        		DockerCommandMemory(limitedMemory);
                     LOG.info("$$$  "+this.app+" "+this.name+" "+this.limitedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
 
@@ -750,6 +779,37 @@ public class ContainerImpl implements Container {
                 this.isShrinking=false;
 	        }
 	        
+	        
+	        
+		}
+		
+		
+		private void DockerCommandCpuMap(Set<Integer> cpus){
+			if(!isFlexible){
+	    		  return;
+	    	  }
+			  List<String> commandPrefix = new ArrayList<String>();
+			  commandPrefix.add("docker");
+			  commandPrefix.add("update");
+			  List<String> commandCores = new ArrayList<String>();
+			  commandCores.addAll(commandPrefix);
+			  commandCores.add("--cpuset-cpus");
+			  int index = 0;
+			  String  coresStr=new String();
+			  for(Integer core : cpus){
+				  coresStr=coresStr+core.toString();
+				  index++;
+				  if(index < cpus.size()){
+					  coresStr=coresStr+",";
+				  }
+			  }
+			  
+			  commandCores.add(coresStr);
+			  commandCores.add(containerId.toString());
+			  String[] commandArrayCores = commandCores.toArray(new String[commandCores.size()]);
+			  this.runDockerUpdateCommand(commandArrayCores);
+			  
+			
 		}
 		
 	    private void DockerCommandCpuQuota(Integer quota){
@@ -847,6 +907,8 @@ public class ContainerImpl implements Container {
 		    
 			if(currentUsedMemory+currentUsedSwap>limitedMemory
 					&& currentUsedSwap > 100){
+				
+				LOG.info("swapping contianer detected: "+this.name);
 				return true;
 			}else{
 				

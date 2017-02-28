@@ -1318,7 +1318,7 @@ public class LeafQueue extends AbstractCSQueue {
     // Make sure to not have completedContainers sort the queues here since
     // we are already inside an iterator loop for the queues and this would
     // cause an concurrent modification exception.
-    LOG.info("core here 3");
+    //LOG.info("core here 3");
     completedContainer(clusterResource, application, nodeToUnreserve,
         nodeToUnreserve.getReservedContainer(),
         SchedulerUtils.createAbnormalContainerStatus(nodeToUnreserve

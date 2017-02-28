@@ -219,6 +219,8 @@ public class DockerContainerExecutor extends ContainerExecutor {
         .append(" ")
         .append("--memory-swap -1")
         .append(" ")
+        .append("--oom-kill-disable")
+        .append(" ")
         .append("--rm --net=host")
         .append(" ")
         .append(" --name " + containerIdStr)
