@@ -586,8 +586,36 @@ public class ContainerImpl implements Container {
   }
   
   
+  public static class ContainerMemoryEvent{
+	  
+	  //0 for balloon, 1 for resume
+	  int type;
+	  
+	  //ballooned value, or resumed value
+	  int value;
+	  
+	  public ContainerMemoryEvent(int type, int value){
+		  
+		  this.type = type;
+		  this.value= value;
+	  }
+	  
+	  
+	  public int getType(){
+		  
+		  return type;
+	  }
+	  
+	  public int getValue(){
+		  
+		  return value;
+	  }
+	 
+  }
   public class ContainerMonitor extends Thread{
-		
+	  
+	    private ContainerMemoryState memoryState;
+	  
 		private String memoryPath;
 
 		private String name;
@@ -614,6 +642,8 @@ public class ContainerImpl implements Container {
 		
 		private int MIN_FOOTPRINT = 256;
 		
+		private double SLACK_FACTOR;
+		
 		
 		public ContainerMonitor(boolean isFlexible){
 			
@@ -634,9 +664,28 @@ public class ContainerImpl implements Container {
             this.isShrinking=false;
 			this.currentUsedMemory=0;
 			this.currentUsedSwap=0;
+			this.memoryState=ContainerMemoryState.RUNNING;
+			this.SLACK_FACTOR=1.1;
 			
 		    
 		}
+		
+		
+		public void putContainerMemoryEvent(ContainerMemoryEvent event){
+			
+			
+			
+			
+		}
+		
+		
+		public ContainerMemoryEvent getContainerMemoryEvent(){
+			
+			
+			
+			return null;
+		}
+		
 		
 		@Override
 		public void run(){
@@ -658,9 +707,41 @@ public class ContainerImpl implements Container {
 			//int count = 3;
 			//int index = 0;
 			while(stateMachine.getCurrentState() == ContainerState.RUNNING && isRunning){
+				//update necessary metrics
 				updateCgroupValues();
+				ContainerMemoryEvent event = getContainerMemoryEvent();
+				ContainerMemoryState nextState;
+				switch(memoryState){
+				
+				   case  RUNNING:
+					     //process reclaim
+					     if(event.getType()==1){
+					    	 updateConfiguredMemory(event.getValue());
+					    	 nextState=ContainerMemoryState.RUNNING;
+					    	 break;
+					     }
+					     
+					     //process shrink
+					     if(getIsSlack()){
+					    	 
+					    	shrinkSlack();
+					     }
+					   
+					   
+					     break;
+				
+				   case  SUSPENDING:
+					   
+					     break;
+					   
+					   
+				   case  RECOVERYING:
+					   
+					   
+					     break;
+				}
 				//if used memory+swap > configured and swap > threadshhod
-				if(getIsSwapping()){
+				if(getIsOutofMemory()){
 				   if(!isSwapping){
 					 //optimize technique to minimize overhead
 					 LOG.info("stop cpu by monitor "+name);
@@ -692,10 +773,13 @@ public class ContainerImpl implements Container {
 					} catch (InterruptedException e) {
 					    e.printStackTrace();
 				 }
+				 
 			}
 			isRunning = false;
 		}
 		
+		
+		//private void 
 	
 		private void updateCgroupValues(){
 			
@@ -728,7 +812,7 @@ public class ContainerImpl implements Container {
 		}
 		
 		
-		private void updateConfiguredMemory(){
+		private void updateConfiguredMemory(int memory){
 			
 	        LOG.info("update container memory: "+name+" old: "+limitedMemory
 	        		 +"new: "+currentConfiguredMemory);
@@ -900,20 +984,64 @@ public class ContainerImpl implements Container {
 		
 		//pulled by nodemanager
 		public boolean getIsSwapping(){
+			
 			if(!isRunning)
 				return false;
 			
 			updateCgroupValues();
 		    
-			if(currentUsedMemory+currentUsedSwap>limitedMemory
-					&& currentUsedSwap > 100){
+			if(currentUsedSwap > 100){
 				
-				LOG.info("swapping contianer detected: "+this.name);
+			LOG.info("swapping contianer detected: "+this.name);
+				
+			    return true;
+			}else{
+				return false;
+			}
+		}
+		
+		
+		public boolean getIsSlack(){
+			
+			if(!isRunning)
+				return false;
+			
+			if(limitedMemory > currentUsedMemory*SLACK_FACTOR){
+				
+				LOG.info("slacking contianer detected: "+this.name);
+				
+				return true;
+			}else{
+				return false;
+			}
+		}
+		
+		
+		public void shrinkSlack(){
+			
+			int targetSize = (int)(currentUsedMemory*SLACK_FACTOR);
+			
+			if(targetSize > 0)
+			    updateConfiguredMemory(targetSize);
+		}
+		
+		public boolean getIsOutofMemory(){
+			
+			if(!isRunning)
+				return false;
+			
+			updateCgroupValues();
+		    
+			if(currentUsedMemory+currentUsedSwap>limitedMemory){
+				
+			LOG.info("out of memory contianer detected: "+this.name);
 				return true;
 			}else{
 				
 				return false;
 			}
+			
+			
 		}
 		
 		//recalim $claimSize MB memory from used container
