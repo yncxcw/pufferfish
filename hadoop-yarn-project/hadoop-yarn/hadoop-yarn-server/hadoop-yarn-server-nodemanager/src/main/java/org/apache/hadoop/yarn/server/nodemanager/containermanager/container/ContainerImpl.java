@@ -729,6 +729,9 @@ public class ContainerImpl implements Container {
 				   ContainerMemoryEvent tempEvent=cmeQueue.poll();
 				   average += tempEvent.getValue();
 				   count++;
+				   if(cmeQueue.isEmpty()){
+					   break;
+				   }
 			   }
 			   topEvent.value=(int)(average/count);
 			   
@@ -784,8 +787,8 @@ public class ContainerImpl implements Container {
 					    		
 					    	 }
 					    	 else{
+					    		 resumeCpus();
 					    	     memoryState=ContainerMemoryState.RUNNING;
-					    	     resumeCpus();
 					    	 }
 					    	 continue;
 					    	
@@ -815,14 +818,13 @@ public class ContainerImpl implements Container {
 					     }
 					     //process balloon
 					     else if(event.getType()==0){
-					    	 LOG.info(this.name+" balloon"); 
+					    	LOG.info(this.name+" balloon"); 
 					    	updateConfiguredMemory(event.getValue()); 
 					    	memoryState=ContainerMemoryState.SUSPENDING;
 					    	balloonedBefore=true;
 					    	continue;
 					     }
 					     else if(getIsSwapping()){
-					    	 
 					    	resumeCpuQuota();
 					    	memoryState=ContainerMemoryState.RECOVERYING;
 					    	continue;
@@ -841,17 +843,20 @@ public class ContainerImpl implements Container {
 					    	 LOG.info(this.name+" reclaim"); 
 					    	suspendCpus();
 					    	if(updateConfiguredMemory(event.getValue())){
-					    		memoryState = ContainerMemoryState.SUSPENDING;
+					    		 memoryState = ContainerMemoryState.SUSPENDING;
 					    		
 					    	}else{
-						         memoryState=ContainerMemoryState.RECOVERYING;
 						         resumeCpuQuota();
+						         memoryState=ContainerMemoryState.RECOVERYING;
 					    	}
 					    	continue;
+					     }else if(getIsOutofMemory()){
+					    	 suspendCpus();
+						     memoryState=ContainerMemoryState.SUSPENDING;
+						     continue;
 					     }
 					     //process finish swapping
 					     else if(getIsNoneSwapping()){
-					    	 
 					    	 resumeCpus();
 					    	 memoryState=ContainerMemoryState.RUNNING;
 					    	 continue;
@@ -1104,7 +1109,7 @@ public class ContainerImpl implements Container {
 				return false;
 			updateCgroupValues();
 			
-			if(!getIsOutofMemory()&&currentUsedSwap == 0){
+			if(!getIsOutofMemory()&&currentUsedSwap <= 100 ){
 				LOG.info("non-swapping container detected: "+this.name);
 				return true;
 			}else{
