@@ -30,8 +30,10 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -588,11 +590,11 @@ public class ContainerImpl implements Container {
   
   public static class ContainerMemoryEvent{
 	  
-	  //0 for balloon, 1 for resume
-	  int type;
+	  //0 for balloon, 1 for resume. -1 for null
+	  public int type;
 	  
 	  //ballooned value, or resumed value
-	  int value;
+	  public int value;
 	  
 	  public ContainerMemoryEvent(int type, int value){
 		  
@@ -620,11 +622,9 @@ public class ContainerImpl implements Container {
 
 		private String name;
 		
-		private String app;
-		
 		private String dockerId=null;
 		
-		private List<Long> currentConfiguredMemory;
+		private Queue<ContainerMemoryEvent> cmeQueue;
 		
 		private long currentUsedMemory;
 		
@@ -632,58 +632,111 @@ public class ContainerImpl implements Container {
 
 		private long limitedMemory;
 		
-		private boolean isSwapping;
-		
 		private boolean isRunning;
-		
-		private boolean isUpdated;
 
-        private boolean isShrinking;
-		
-		private int MIN_FOOTPRINT = 256;
-		
 		private double SLACK_FACTOR;
+		
+		private boolean balloonedBefore;
+		
+		private boolean isBallooningWindow;
+		
+		private final ReadWriteLock stateLock;
 		
 		
 		public ContainerMonitor(boolean isFlexible){
 			
 			//YARN container id
 			this.name = containerId.toString();
-			this.app  = containerId.getApplicationAttemptId().getApplicationId().toString();
 			LOG.info("container id:"+this.name);
 			//in terms of M
-            currentConfiguredMemory =new ArrayList<Long>();
-			if(isFlexible){
-			//TODO add this value to configure
-			  this.currentConfiguredMemory.add((long)4096);
-			}else{
-			  this.currentConfiguredMemory.add((long)resource.getMemory());
-			}
-			LOG.info("initialize configured: "+name+currentConfiguredMemory);
-			this.isSwapping =false;
-            this.isShrinking=false;
-			this.currentUsedMemory=0;
-			this.currentUsedSwap=0;
+			this.currentUsedMemory= 0;
+			this.currentUsedSwap  = 0;
+			this.limitedMemory    = 0;
+			//current memory state
 			this.memoryState=ContainerMemoryState.RUNNING;
+			//synchronized queue for insert to balloonned or reclaimed value
+			this.cmeQueue  =new LinkedList<ContainerMemoryEvent>();
 			this.SLACK_FACTOR=1.1;
+			//record if it is in ballooning window
+			this.isBallooningWindow=false;
+			//record if it has ever ballooned before
+			this.balloonedBefore=false;
+			//for accessing control over memory state
+		    this.stateLock = new ReentrantReadWriteLock();
 			
 		    
 		}
 		
+		public synchronized void setBallooningWindow(boolean isInWindow){
+			this.stateLock.writeLock().lock();
+			try{
+			this.isBallooningWindow=isInWindow;
+			}finally{
+				this.stateLock.writeLock().unlock();
+			}
+		}
 		
-		public void putContainerMemoryEvent(ContainerMemoryEvent event){
-			
-			
-			
-			
+		public synchronized boolean getBallooningWindow(){
+			this.stateLock.readLock().lock();
+			try{
+			return this.isBallooningWindow;
+			}finally{
+				this.stateLock.readLock().unlock();
+			}
+		}
+		
+		//put into the synchronized queue
+		public synchronized void putContainerMemoryEvent(ContainerMemoryEvent event){
+			   cmeQueue.add(event);
+		}
+		
+		public void setMemorySate(ContainerMemoryState memoryState){
+			this.stateLock.writeLock().lock();
+			try{
+				this.memoryState=memoryState;
+			}finally{
+			  this.stateLock.writeLock().unlock();	
+			}
 		}
 		
 		
-		public ContainerMemoryEvent getContainerMemoryEvent(){
+		public ContainerMemoryState getMemoryState(){
+			this.stateLock.readLock().lock();
+			try{
+				return memoryState;
+			}finally{
+				this.stateLock.readLock().unlock();
+			}
+		}
+		
+		//poll from the synchronized queue
+		public synchronized ContainerMemoryEvent getContainerMemoryEvent(){
+			   LOG.info("event queue length: "+cmeQueue.size());
+			   if(cmeQueue.isEmpty()){
+				   LOG.info("empty event");
+				   return new ContainerMemoryEvent(-1,0);
+			   }
+			   long average=0;
+			   int  count  =0;
+			   
+			   ContainerMemoryEvent topEvent=cmeQueue.poll();
+			   LOG.info("top event: "+topEvent.type+" value: "+topEvent.value);
+			   average = topEvent.getValue();
+			   count   = 1;
+			   //if there are any other event, merge same types of event
+			   if(cmeQueue.size() > 0){
+			   while(topEvent.getType()==cmeQueue.peek().getType()){
+				   ContainerMemoryEvent tempEvent=cmeQueue.poll();
+				   average += tempEvent.getValue();
+				   count++;
+			   }
+			   topEvent.value=(int)(average/count);
+			   
+			   }
+			   cmeQueue.clear();
 			
 			
-			
-			return null;
+			return topEvent;
 		}
 		
 		
@@ -710,66 +763,106 @@ public class ContainerImpl implements Container {
 				//update necessary metrics
 				updateCgroupValues();
 				ContainerMemoryEvent event = getContainerMemoryEvent();
-				ContainerMemoryState nextState;
+				//ContainerMemoryState nextState;
+			    LOG.info("$$$  "+this.name+" "+memoryState);
+			    LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
+				
 				switch(memoryState){
 				
 				   case  RUNNING:
+					     //for debug
+					     if(event.getType()==0){
+					    	 LOG.info("wrongstate: running receive balloon: "+this.name);
+					     }
 					     //process reclaim
 					     if(event.getType()==1){
-					    	 updateConfiguredMemory(event.getValue());
-					    	 nextState=ContainerMemoryState.RUNNING;
-					    	 break;
+					    	 //suspend cpu for memory management
+					    	 LOG.info(this.name+" reclaim");
+					    	 suspendCpus();
+					    	 if(updateConfiguredMemory(event.getValue())){
+					    		 memoryState = ContainerMemoryState.SUSPENDING;
+					    		
+					    	 }
+					    	 else{
+					    	     memoryState=ContainerMemoryState.RUNNING;
+					    	     resumeCpus();
+					    	 }
+					    	 continue;
+					    	
 					     }
-					     
 					     //process shrink
-					     if(getIsSlack()){
-					    	 
+					     else if(getIsSlack()){				    	 
 					    	shrinkSlack();
+					    	memoryState=ContainerMemoryState.RUNNING;
+					    	continue;
 					     }
-					   
+					     //process out of memory
+					     else if(getIsOutofMemory()){
+					    	suspendCpus();
+					    	memoryState=ContainerMemoryState.SUSPENDING;
+					    	continue;
+					     }
 					   
 					     break;
-				
 				   case  SUSPENDING:
+					  
+					     //process reclaim
+					     if(event.getType() == 1){
+					    	LOG.info(this.name+" reclaim");
+					    	updateConfiguredMemory(event.getValue());
+					    	memoryState=ContainerMemoryState.SUSPENDING;
+					    	continue;
+					     }
+					     //process balloon
+					     else if(event.getType()==0){
+					    	 LOG.info(this.name+" balloon"); 
+					    	updateConfiguredMemory(event.getValue()); 
+					    	memoryState=ContainerMemoryState.SUSPENDING;
+					    	balloonedBefore=true;
+					    	continue;
+					     }
+					     else if(getIsSwapping()){
+					    	 
+					    	resumeCpuQuota();
+					    	memoryState=ContainerMemoryState.RECOVERYING;
+					    	continue;
+					     }
 					   
 					     break;
 					   
 					   
 				   case  RECOVERYING:
-					   
-					   
+					    //for debug
+					     if(event.getType()==0){
+					    	 LOG.info("wrongstate: recoverying receive balloon: "+this.name);
+					     }
+					     //process reclaim 
+					     if(event.getType()==1){
+					    	 LOG.info(this.name+" reclaim"); 
+					    	suspendCpus();
+					    	if(updateConfiguredMemory(event.getValue())){
+					    		memoryState = ContainerMemoryState.SUSPENDING;
+					    		
+					    	}else{
+						         memoryState=ContainerMemoryState.RECOVERYING;
+						         resumeCpuQuota();
+					    	}
+					    	continue;
+					     }
+					     //process finish swapping
+					     else if(getIsNoneSwapping()){
+					    	 
+					    	 resumeCpus();
+					    	 memoryState=ContainerMemoryState.RUNNING;
+					    	 continue;
+					     }
 					     break;
 				}
-				//if used memory+swap > configured and swap > threadshhod
-				if(getIsOutofMemory()){
-				   if(!isSwapping){
-					 //optimize technique to minimize overhead
-					 LOG.info("stop cpu by monitor "+name);
-					 suspendCpus();
-					 isSwapping = true;
-				   }	     
-				}else{
-				   if(isSwapping){
-					 //resume the cpu usage  
-					 LOG.info("release cpu by monitor "+name);
-					 resumeCpus();
-					 isSwapping = false;
-				   }
-				   
-				}
-				
-				//update configured memory
-				if(isUpdated){
-				   updateConfiguredMemory();  	
-				   isUpdated=false;	
-				}
-				
-				
-				LOG.info("$$$  "+this.app+" "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
-				
+					
+			
 				//if we come here it means we need to sleep for 2s
 				 try {
-					    Thread.sleep(1000);
+					    Thread.sleep(100);
 					} catch (InterruptedException e) {
 					    e.printStackTrace();
 				 }
@@ -790,6 +883,13 @@ public class ContainerImpl implements Container {
 			getCurrentUsedSwap();
 		}
 		
+		private void suspendCpuQuota(){
+			DockerCommandCpuQuota(1000);
+		}
+		
+		private void resumeCpuQuota(){
+			DockerCommandCpuQuota(-1);
+		}
 		
 		private void suspendCpus(){
 			
@@ -812,55 +912,42 @@ public class ContainerImpl implements Container {
 		}
 		
 		
-		private void updateConfiguredMemory(int memory){
+		
+		//should return to suspending state
+		//if memory < currentUsed
+		//return true
+		//else
+		//return false
+		private boolean updateConfiguredMemory(long memory){
 			
 	        LOG.info("update container memory: "+name+" old: "+limitedMemory
-	        		 +"new: "+currentConfiguredMemory);
+	        		 +"new: "+memory);
 
-            double up  =0;
-            double down=0;
-            //moving avareage
-            for(int i=1; i <= this.currentConfiguredMemory.size();i++){
-                down=down + i;
-                up  =up   + i*this.currentConfiguredMemory.get(i-1);
-            }
-
-            long configuredMemory=(long)(up/down);
-            int size=this.currentConfiguredMemory.size();
-            this.currentConfiguredMemory.clear();
-            LOG.info("new cmemory: "+configuredMemory);
 	        
-	        if(configuredMemory > limitedMemory){
-	        	DockerCommandMemory(configuredMemory);
-	        	//whatever we open cpu here
-	        	LOG.info("release cpu by ballon "+name);
-	        	resumeCpus();
-	        	isSwapping=false;
-	        }else if(configuredMemory < limitedMemory){
-                if(configuredMemory < limitedMemory*0.5 && size < 3){
+	        if(memory > currentUsedMemory){
+	        	DockerCommandMemory(memory);
+	        	LOG.info("balloon-nswap: "+this.name+" from "+this.limitedMemory+"to: "+memory);
+	        	return false;
+	        }else{
+                if(memory < currentUsedMemory*0.5){
                     LOG.info("delay shrink");
-                    return;
+                    memory = (long)(currentUsedMemory*0.5);
+                    
                 }
-                //whatever we throttle cpu here
-                //LOG.info("stop cpu by reclaim "+name);
-                //LOG.info(name+" shrink ");
-	        	suspendCpus();
-	        	isSwapping=true;
-                //LOG.info("shrink start configure: "+configuredMemory);
-                //LOG.info("shrink start limited:   "+limitedMemory);
-                //this.isShrinking=true;
-	        	while(configuredMemory < limitedMemory){
-	        		if(limitedMemory - 512 >configuredMemory)
-	        		     limitedMemory = limitedMemory - 512;
-	        		DockerCommandMemory(limitedMemory);
-                    LOG.info("$$$  "+this.app+" "+this.name+" "+this.limitedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
+                
+                long startTime=System.currentTimeMillis();   //current time
+                long size = currentUsedMemory - memory;
+	        	while(memory < currentUsedMemory){
+	        		if(currentUsedMemory - 512 > memory)
+	        			currentUsedMemory = currentUsedMemory - 512;
+	        		DockerCommandMemory(currentUsedMemory);
+                    LOG.info("shrink-swap "+this.name+" from "+this.limitedMemory+" to "+this.currentUsedMemory);
 
                 }
-                //LOG.info("shrink finish configure: "+configuredMemory);
-                //LOG.info("shrink finish limited:   "+limitedMemory);
-	        	DockerCommandMemory(configuredMemory);
-                //LOG.info(name+" finish shrinking");
-                this.isShrinking=false;
+	        	DockerCommandMemory(memory);
+	        	long endTime=System.currentTimeMillis();     //end time
+	        	LOG.info("shringk-swap "+this.name+" time: "+(endTime-startTime)+"size: "+size);
+                return true;
 	        }
 	        
 	        
@@ -975,12 +1062,22 @@ public class ContainerImpl implements Container {
 			return currentUsedMemory;
 		}
 		
-		public void setConfiguredMemory(long configuredMemory){
-
-			this.currentConfiguredMemory.add(configuredMemory);
-			isUpdated=true;
+       public boolean getIsOutofMemory(){
+			
+			if(!isRunning)
+				return false;
+			
+			updateCgroupValues();
+		    
+			if(currentUsedMemory+currentUsedSwap>limitedMemory){
+				
+			LOG.info("out of memory contianer detected: "+this.name);
+				return true;
+			}else{
+				
+				return false;
+			}
 		}
-		
 		
 		//pulled by nodemanager
 		public boolean getIsSwapping(){
@@ -990,9 +1087,9 @@ public class ContainerImpl implements Container {
 			
 			updateCgroupValues();
 		    
-			if(currentUsedSwap > 100){
+			if(!getIsOutofMemory()&&currentUsedSwap > 0){
 				
-			LOG.info("swapping contianer detected: "+this.name);
+			LOG.info("swapping container detected: "+this.name);
 				
 			    return true;
 			}else{
@@ -1000,11 +1097,36 @@ public class ContainerImpl implements Container {
 			}
 		}
 		
+		//get is it is none swapping()
+		public boolean getIsNoneSwapping(){
+			
+			if(!isRunning)
+				return false;
+			updateCgroupValues();
+			
+			if(!getIsOutofMemory()&&currentUsedSwap == 0){
+				LOG.info("non-swapping container detected: "+this.name);
+				return true;
+			}else{
+				return false;
+			}
+			
+		}
+		
 		
 		public boolean getIsSlack(){
 			
 			if(!isRunning)
 				return false;
+			
+			if(!balloonedBefore)
+				return false;
+			
+			if(getBallooningWindow()){
+				return false;
+			}
+			
+			updateCgroupValues();
 			
 			if(limitedMemory > currentUsedMemory*SLACK_FACTOR){
 				
@@ -1025,24 +1147,7 @@ public class ContainerImpl implements Container {
 			    updateConfiguredMemory(targetSize);
 		}
 		
-		public boolean getIsOutofMemory(){
-			
-			if(!isRunning)
-				return false;
-			
-			updateCgroupValues();
-		    
-			if(currentUsedMemory+currentUsedSwap>limitedMemory){
-				
-			LOG.info("out of memory contianer detected: "+this.name);
-				return true;
-			}else{
-				
-				return false;
-			}
-			
-			
-		}
+		
 		
 		//recalim $claimSize MB memory from used container
 		//usually called when this container is swapping
@@ -1055,11 +1160,10 @@ public class ContainerImpl implements Container {
 		    	return 0;
 		    long left=Math.max(getResource().getMemory(),limitedMemory-claimSize);
 		    long reclaimed=limitedMemory-left;
-
-		    currentConfiguredMemory.add(left);
-		    isUpdated=true;
-            //LOG.info(name +" creclaim  reclaimed: "+reclaimed);
-            //LOG.info(name +" creclaim  left: "+left);
+            //put to event chanllel
+		    putContainerMemoryEvent(new ContainerMemoryEvent(1,(int)left));
+            LOG.info(name +" creclaim  reclaimed: "+reclaimed);
+            LOG.info(name +" creclaim  left: "+left);
 		    return reclaimed;
 		}
 		

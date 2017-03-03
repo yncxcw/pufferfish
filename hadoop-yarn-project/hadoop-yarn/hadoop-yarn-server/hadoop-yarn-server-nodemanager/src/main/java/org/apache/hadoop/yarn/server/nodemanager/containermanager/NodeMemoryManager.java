@@ -26,6 +26,8 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.nodemanager.Context;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.application.Application;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerImpl.ContainerMemoryEvent;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerMemoryState;
 
 
 public class NodeMemoryManager {
@@ -141,10 +143,11 @@ public class NodeMemoryManager {
 			    	 continue;
 			     }
 				 
-				//add to swapping group
-				 if(container.getContainerMonitor().getIsSwapping()){
+				 //add to swapping group
+				 if(container.getContainerMonitor().getMemoryState()==ContainerMemoryState.SUSPENDING){
 	                 LOG.info("add swapping container"+container.getContainerId());
 	            	 this.containerToSwap.put(containerId, SWAP_KEEP_TIME);
+	            	 container.getContainerMonitor().setBallooningWindow(true);
 	             
 	             //update its waiting time if not swap this round
 				 }else if(this.containerToSwap.containsKey(containerId)){
@@ -154,6 +157,7 @@ public class NodeMemoryManager {
 					 if(this.containerToSwap.get(containerId) <0){
 						 this.containerToSwap.remove(containerId);
 						 LOG.info(containerId+" is removed");
+						 container.getContainerMonitor().setBallooningWindow(false);
 					 }else{
 						 LOG.info("currentWait: "+containerId+"time: "+currentWaitTime);
 					 }
@@ -177,31 +181,6 @@ public class NodeMemoryManager {
 		 
 		 this.updateMetrics();
 		 
-		//shrink containers for overprivisoned containers
-		/*
-		 for(Entry<ContainerId, Long> entry: this.containerToMemoryUsage.entrySet()){
-             ContainerId cntId = entry.getKey();
-             Container container     = this.context.getContainers().get(cntId);
-			 if(this.containerToSwap.containsKey(cntId)){
-				 continue;
-			 }
-			 
-			 if(!container.isFlexble()){
-				 continue;
-			 }
-			 //process flex overprovisoned container
-			 long limitedMemory = (long) container.getContainerMonitor().getCurrentLimitedMemory();
-			 long usedMemory    = (long) entry.getValue();
-			 long adaptMemory   = (long) 1.1*usedMemory;
-			 if(limitedMemory > adaptMemory){
-				long overprovisoned = limitedMemory - adaptMemory;
-				container.getContainerMonitor().setConfiguredMemory(adaptMemory);
-				this.nodeCurrentAssigned-=overprovisoned;
-				LOG.info("##MBoverprovisoned container: "+cntId+"from "+limitedMemory+" to "+adaptMemory);
-			 }
-		 }
-		 
-		*/
 		//sort swapping apps by its starting time
 		 Collections.sort(swappingApps, new Comparator<Application>() {
 		        @Override
@@ -262,8 +241,9 @@ public class NodeMemoryManager {
 		  for(Container cnt : cnts){
 			    //compute new memory after balloon
 			    //LOG.info("cached swapping container: "+cnt.getContainerId()+"  ratio:"+balloonRatio);
-		       if(cnt.getContainerMonitor().getIsSwapping()){
-		    	   //swappingSize++;
+		        //swappingSize++;
+			    //cnt may be in the swapping windows but not swapping yet
+			  if(cnt.getContainerMonitor().getIsOutofMemory()){
 			       int oldMemory     = (int) cnt.getContainerMonitor().getCurrentLimitedMemory();
 			       int newMemory     = (int) (oldMemory*balloonRatio);
 				   int available     = (int) (nodeTotal*STOP_BALLOON_LIMIT-nodeCurrentAssigned);
@@ -278,10 +258,11 @@ public class NodeMemoryManager {
 			       long newCntMemory = oldMemory+newMemory;
 
 			        LOG.info("### container "+cnt.getContainerId()+" ratio "+balloonRatio+" from "+oldMemory+" to "+newCntMemory+" ###");
-			        cnt.getContainerMonitor().setConfiguredMemory(newCntMemory);
+			        ContainerMemoryEvent memoryEvent = new ContainerMemoryEvent(0,(int)newCntMemory);
+			        cnt.getContainerMonitor().putContainerMemoryEvent(memoryEvent);
 			        nodeCurrentAssigned+=newMemory;
-
-		        }
+			  }
+		        
 		  }
 		  balloonRatio/=8;
 		  
@@ -311,7 +292,7 @@ public class NodeMemoryManager {
 		 Container container = (Container) this.context.getContainers().get(cntId);
 		 if(container.isFlexble() && (containerToMemoryUsage.get(cntId) >
 		                          container.getResource().getMemory())){
-			 if(container.getContainerMonitor().getIsSwapping())
+			 if(container.getContainerMonitor().getMemoryState()==ContainerMemoryState.SUSPENDING)
 				 scontainers.add(container);
 			 else
 				 bcontainers.add(container);
