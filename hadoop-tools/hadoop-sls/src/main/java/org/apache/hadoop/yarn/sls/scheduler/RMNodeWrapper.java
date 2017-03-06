@@ -158,4 +158,10 @@ public class RMNodeWrapper implements RMNode {
   public Set<String> getNodeLabels() {
     return RMNodeLabelsManager.EMPTY_STRING_SET;
   }
+
+@Override
+public long getCurrentActualMemory() {
+	// TODO Auto-generated method stub
+	return 0;
+}
 }

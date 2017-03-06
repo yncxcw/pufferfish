@@ -168,6 +168,12 @@ public class NodeInfo {
     public Set<String> getNodeLabels() {
       return RMNodeLabelsManager.EMPTY_STRING_SET;
     }
+
+	@Override
+	public long getCurrentActualMemory() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
   }
 
   public static RMNode newNodeInfo(String rackName, String hostName,

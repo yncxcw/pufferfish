@@ -140,7 +140,7 @@ public class TestRMWebServicesNodes extends JerseyTestBase {
     RMNodeImpl node = (RMNodeImpl) rm.getRMContext().getRMNodes()
         .get(nm3.getNodeId());
     NodeHealthStatus nodeHealth = NodeHealthStatus.newInstance(false,
-        "test health report", System.currentTimeMillis());
+        "test health report", System.currentTimeMillis(), 0);
     node.handle(new RMNodeStatusEvent(nm3.getNodeId(), nodeHealth,
         new ArrayList<ContainerStatus>(), null, null));
     rm.NMwaitForState(nm3.getNodeId(), NodeState.UNHEALTHY);
