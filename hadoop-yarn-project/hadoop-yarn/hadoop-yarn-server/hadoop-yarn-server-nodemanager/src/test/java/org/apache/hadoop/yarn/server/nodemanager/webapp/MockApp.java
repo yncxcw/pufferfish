@@ -77,6 +77,12 @@ public class MockApp implements Application {
 
   public void handle(ApplicationEvent event) {}
 
+@Override
+public long getApplicationLaunchTime() {
+	// TODO Auto-generated method stub
+	return 0;
+}
+
 
 
 }

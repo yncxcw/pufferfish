@@ -488,7 +488,7 @@ public class TestRMNodeTransitions {
   private RMNodeImpl getUnhealthyNode() {
     RMNodeImpl node = getRunningNode();
     NodeHealthStatus status = NodeHealthStatus.newInstance(false, "sick",
-        System.currentTimeMillis());
+        System.currentTimeMillis(), 0);
     node.handle(new RMNodeStatusEvent(node.getNodeID(), status,
         new ArrayList<ContainerStatus>(), null, null));
     Assert.assertEquals(NodeState.UNHEALTHY, node.getState());
