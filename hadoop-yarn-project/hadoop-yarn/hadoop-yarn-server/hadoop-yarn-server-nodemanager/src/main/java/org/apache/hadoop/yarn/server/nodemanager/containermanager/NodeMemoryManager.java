@@ -217,7 +217,7 @@ public class NodeMemoryManager {
 		 //usage for this container
 		 double usage    = nodeCurrentUsed*1.0/nodeTotal*1.0;
 		 double assignage= nodeCurrentAssigned*1.0/nodeTotal*1.0;
-		// LOG.info("balloon usage  and assignage:  "+usage+"  "+assignage);
+		 LOG.info("balloon assignage:  "+assignage+"  usage: "+assignage+" RECLAIM LIMIT: "+RECLAIM_BALLOON_LIMIT+" STOP LIMIT: "+STOP_BALLOON_LIMIT);
 		 if(assignage > RECLAIM_BALLOON_LIMIT){
 			
 			 int memoryClaimed=(int)((assignage-RECLAIM_BALLOON_LIMIT)*nodeTotal);

@@ -1109,7 +1109,7 @@ public class ContainerImpl implements Container {
 				return false;
 			updateCgroupValues();
 			
-			if(!getIsOutofMemory()&&currentUsedSwap <= 100 ){
+			if(!getIsOutofMemory()&&currentUsedSwap <= 500 ){
 				LOG.info("non-swapping container detected: "+this.name);
 				return true;
 			}else{
@@ -1133,7 +1133,7 @@ public class ContainerImpl implements Container {
 			
 			updateCgroupValues();
 			
-			if(limitedMemory > currentUsedMemory*SLACK_FACTOR){
+			if(limitedMemory > (currentUsedMemory+currentUsedSwap)*SLACK_FACTOR){
 				
 				LOG.info("slacking contianer detected: "+this.name);
 				
@@ -1146,7 +1146,7 @@ public class ContainerImpl implements Container {
 		
 		public void shrinkSlack(){
 			
-			int targetSize = (int)(currentUsedMemory*SLACK_FACTOR);
+			int targetSize = (int)((currentUsedMemory+currentUsedSwap)*SLACK_FACTOR);
 			
 			if(targetSize > 0)
 			    updateConfiguredMemory(targetSize);
