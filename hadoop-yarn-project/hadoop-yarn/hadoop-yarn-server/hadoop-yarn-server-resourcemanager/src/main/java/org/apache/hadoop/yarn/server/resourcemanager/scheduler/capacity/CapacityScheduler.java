@@ -1036,7 +1036,9 @@ public class CapacityScheduler extends
     
     //update actual memory usage, we guarantee we always get newest value
     node.setCurrentActualMemory(nm.getCurrentActualMemory());
+    node.setCurrentRealMemory(nm.getCurrentRealMemory());
     
+    //
     List<UpdatedContainerInfo> containerInfoList = nm.pullContainerUpdates();
     List<ContainerStatus> newlyLaunchedContainers = new ArrayList<ContainerStatus>();
     List<ContainerStatus> completedContainers = new ArrayList<ContainerStatus>();

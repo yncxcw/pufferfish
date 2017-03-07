@@ -141,4 +141,18 @@ public class NodeHealthStatusPBImpl extends NodeHealthStatus {
 	 return (p.getActualMemory());  
 	  
   }
+
+@Override
+public long getRealMemory() {
+	NodeHealthStatusProtoOrBuilder p=
+			    this.viaProto ? this.proto : this.builder;
+	return (p.getRealMemory());
+}
+
+@Override
+public void setRealMemory(long realMemory) {
+	maybeInitBuilder();
+	this.builder.setRealMemory(realMemory);
+	
+   }
 }

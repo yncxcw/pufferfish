@@ -353,7 +353,25 @@ public class NodeMemoryManager {
  
  public long getCurrentActualMemory(){
 	 
-	 return (long)(nodeTotal*STOP_BALLOON_LIMIT-this.nodeCurrentAssigned);
+	 try{
+		 readLock.lock();
+	 
+	     return (long)(nodeTotal*STOP_BALLOON_LIMIT-this.nodeCurrentAssigned);
+	 }finally{
+		 readLock.unlock();
+	 }
+ }
+ 
+ 
+ public long getRealUsedMemory(){
+	 
+	 try{ 
+		 readLock.lock();
+		 
+		 return this.nodeCurrentUsed;
+	 }finally{
+		 readLock.unlock();
+	 }
  }
 	 
 }

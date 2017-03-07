@@ -48,6 +48,7 @@ message NodeHealthStatusProto {
   optional string health_report = 2;
   optional int64 last_health_report_time = 3;
   optional int64 actual_memory=4;
+  optional int64 real_memory=5;
 }
 
 message VersionProto {

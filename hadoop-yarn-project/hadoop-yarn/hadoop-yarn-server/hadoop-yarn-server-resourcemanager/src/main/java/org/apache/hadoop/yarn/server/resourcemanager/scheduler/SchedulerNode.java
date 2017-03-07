@@ -58,8 +58,18 @@ public abstract class SchedulerNode {
   private RMContainer reservedContainer;
   private volatile int numContainers;
   private long currentActualMemory;
+  private long currentRealMemory;
   private int  curentRunningFlexContainers;
+  
+  
+  
+  public long getCurrentRealMemory() {
+	return currentRealMemory;
+  }
 
+  public void setCurrentRealMemory(long currentRealMemory) {
+	this.currentRealMemory = currentRealMemory;
+  }
 
   public long getCurrentActualMemory() {
 	return  currentActualMemory;

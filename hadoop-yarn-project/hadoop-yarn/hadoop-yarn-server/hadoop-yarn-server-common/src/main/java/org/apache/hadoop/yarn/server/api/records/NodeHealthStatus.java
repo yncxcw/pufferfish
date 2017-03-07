@@ -105,4 +105,21 @@ public abstract class NodeHealthStatus {
   @Private
   @Unstable
   public abstract void setActualMemory(long actualMemory);
+  
+  
+  /**
+   * Get the <em>real memory is being used</em> at which the heal report was received
+   * This feature was designed to support mballoon project(since each node has actual or assgined memory )
+   * @return
+   */
+  @Private
+  @Unstable
+  public abstract long getRealMemory();
+  
+  
+  @Private
+  @Unstable
+  public abstract void setRealMemory(long realMemory);
+  
+  
 }

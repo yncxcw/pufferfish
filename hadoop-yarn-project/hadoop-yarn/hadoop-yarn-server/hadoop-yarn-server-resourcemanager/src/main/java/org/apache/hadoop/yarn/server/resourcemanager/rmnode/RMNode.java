@@ -153,4 +153,10 @@ public interface RMNode {
    * @return
    */
   public long getCurrentActualMemory();
+  
+  /**
+   * Get current real used memory for Mballoon
+   * @return
+   */
+  public long getCurrentRealMemory();
 }
