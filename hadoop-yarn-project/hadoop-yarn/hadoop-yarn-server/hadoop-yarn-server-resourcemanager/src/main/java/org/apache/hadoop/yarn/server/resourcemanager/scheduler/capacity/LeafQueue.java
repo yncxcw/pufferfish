@@ -1497,10 +1497,18 @@ public class LeafQueue extends AbstractCSQueue {
     Resource capability = request.getCapability();
     Resource available  = node.getAvailableResource();
     //memory awareness code place here:
-    Resource actualResource  = Resource.newInstance((int)node.getCurrentActualMemory(),
-    		                                       available.getVirtualCores());
-    		
+    LOG.info("MBNode "+node.getNodeName()+" actual memory "+(int)node.getCurrentActualMemory());
+    int actualMemory;
+    if(node.getCurrentActualMemory() < 0){
+    	actualMemory = 0;
+    }else{
+    	actualMemory = (int)node.getCurrentActualMemory();
+    }
     
+    Resource actualResource  = Resource.newInstance(actualMemory,
+    		                                       available.getVirtualCores());
+    
+   
     Resource totalResource = node.getTotalResource();
 
     if (!Resources.lessThanOrEqual(resourceCalculator, clusterResource,
