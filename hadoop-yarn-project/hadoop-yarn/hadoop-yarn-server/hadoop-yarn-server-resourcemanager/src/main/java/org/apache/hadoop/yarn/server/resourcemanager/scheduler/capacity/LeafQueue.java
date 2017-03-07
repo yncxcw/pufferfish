@@ -1509,6 +1509,7 @@ public class LeafQueue extends AbstractCSQueue {
     long totalRealMemory=0;
     for(FiCaSchedulerNode ficaNode : this.csContext.getAllNode()){
     	totalRealMemory = totalRealMemory+ficaNode.getCurrentRealMemory();
+    	LOG.info("MBNODE real "+ficaNode.getNodeName()+" "+ficaNode.getCurrentRealMemory());
 	}
     LOG.info("MBTOTAL total real "+totalRealMemory);
     

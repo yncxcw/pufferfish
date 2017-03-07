@@ -174,6 +174,12 @@ public class NodeInfo {
 		// TODO Auto-generated method stub
 		return 0;
 	}
+
+	@Override
+	public long getCurrentRealMemory() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
   }
 
   public static RMNode newNodeInfo(String rackName, String hostName,
