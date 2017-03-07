@@ -147,7 +147,7 @@ public long getRealMemory() {
 	NodeHealthStatusProtoOrBuilder p=
 			    this.viaProto ? this.proto : this.builder;
 	return (p.getRealMemory());
-}
+   }
 
 @Override
 public void setRealMemory(long realMemory) {

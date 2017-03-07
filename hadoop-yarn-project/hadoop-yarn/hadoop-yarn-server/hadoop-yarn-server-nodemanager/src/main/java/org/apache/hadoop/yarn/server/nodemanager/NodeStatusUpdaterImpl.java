@@ -354,6 +354,7 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
       .getLastHealthReportTime());
     //piggy back to resource manager the actual memory usage.
     nodeHealthStatus.setActualMemory(context.getNodeMemoryManager().getCurrentActualMemory());
+    LOG.info("updater real: "+context.getNodeMemoryManager().getRealUsedMemory());
     nodeHealthStatus.setRealMemory(context.getNodeMemoryManager().getRealUsedMemory());
     
     if (LOG.isDebugEnabled()) {

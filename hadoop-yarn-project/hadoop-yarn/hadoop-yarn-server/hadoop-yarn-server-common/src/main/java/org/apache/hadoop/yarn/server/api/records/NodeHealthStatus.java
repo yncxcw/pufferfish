@@ -47,12 +47,13 @@ public abstract class NodeHealthStatus {
 
   @Private
   public static NodeHealthStatus newInstance(boolean isNodeHealthy,
-      String healthReport, long lastHealthReport, long actualMemory) {
+      String healthReport, long lastHealthReport, long actualMemory,long realMemory) {
     NodeHealthStatus status = Records.newRecord(NodeHealthStatus.class);
     status.setIsNodeHealthy(isNodeHealthy);
     status.setHealthReport(healthReport);
     status.setLastHealthReportTime(lastHealthReport);
     status.setActualMemory(actualMemory);
+    status.setRealMemory(realMemory);
     return status;
   }
 

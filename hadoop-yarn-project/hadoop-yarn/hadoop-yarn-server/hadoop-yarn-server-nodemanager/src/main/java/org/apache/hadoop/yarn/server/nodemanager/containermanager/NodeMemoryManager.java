@@ -370,7 +370,7 @@ public class NodeMemoryManager {
 		 readLock.lock();
 		 
 		 long value = this.nodeCurrentUsed;
-		 LOG.info("real used: "+nodeCurrentUsed);
+		 LOG.info("real used: "+value);
 		 return value;
 	 }finally{
 		 readLock.unlock();
