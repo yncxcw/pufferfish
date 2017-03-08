@@ -354,7 +354,7 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
       .getLastHealthReportTime());
     //piggy back to resource manager the actual memory usage.
     nodeHealthStatus.setActualMemory(context.getNodeMemoryManager().getCurrentActualMemory());
-    LOG.info("updater real: "+context.getNodeMemoryManager().getRealUsedMemory());
+   
     nodeHealthStatus.setRealMemory(context.getNodeMemoryManager().getRealUsedMemory());
     
     if (LOG.isDebugEnabled()) {
@@ -365,6 +365,8 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
     NodeStatus nodeStatus =
         NodeStatus.newInstance(nodeId, responseId, containersStatuses,
           createKeepAliveApplicationList(), nodeHealthStatus);
+    
+    LOG.info("update real: "+nodeStatus.getNodeHealthStatus().getRealMemory());
 
     return nodeStatus;
   }
@@ -607,6 +609,9 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
                     .getContainerTokenSecretManager().getCurrentKey(),
                   NodeStatusUpdaterImpl.this.context.getNMTokenSecretManager()
                     .getCurrentKey());
+            
+            LOG.info("update real2: "+request.getNodeStatus().getNodeHealthStatus().getRealMemory());
+
             response = resourceTracker.nodeHeartbeat(request);
             //get next heartbeat interval from response
             nextHeartBeatInterval = response.getNextHeartBeatInterval();
