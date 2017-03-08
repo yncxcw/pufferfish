@@ -1498,6 +1498,7 @@ public class LeafQueue extends AbstractCSQueue {
     Resource available  = node.getAvailableResource();
     //memory awareness code place here:
     LOG.info("MBNode "+node.getNodeName()+" actual memory "+(int)node.getCurrentActualMemory());
+    
     int actualMemory;
     
     if(node.getCurrentActualMemory() < 0){
@@ -1509,9 +1510,9 @@ public class LeafQueue extends AbstractCSQueue {
     long totalRealMemory=0;
     for(FiCaSchedulerNode ficaNode : this.csContext.getAllNode()){
     	totalRealMemory = totalRealMemory+ficaNode.getCurrentRealMemory();
-    	LOG.info("MBNODE real "+ficaNode.getNodeName()+" "+ficaNode.getCurrentRealMemory());
 	}
-    LOG.info("MBTOTAL total real "+totalRealMemory);
+    
+    //LOG.info("MBTOTAL total real "+totalRealMemory);
     
     Resource actualResource  = Resource.newInstance(actualMemory,
     		                                       available.getVirtualCores());

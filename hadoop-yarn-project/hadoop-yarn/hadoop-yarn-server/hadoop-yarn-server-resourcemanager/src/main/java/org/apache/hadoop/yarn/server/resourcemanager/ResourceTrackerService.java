@@ -367,7 +367,7 @@ public class ResourceTrackerService extends AbstractService implements
      * 4. Send healthStatus to RMNode
      */
 
-    LOG.info("update real3: "+request.getNodeStatus().getNodeHealthStatus().getRealMemory());
+    
 
     NodeId nodeId = remoteNodeStatus.getNodeId();
     //0. check all the RMApp and the node on which this App is running
@@ -391,6 +391,12 @@ public class ResourceTrackerService extends AbstractService implements
       return shutDown;
     }
 
+    //print total real memory
+    long totalReal=0;
+    for(NodeId node : this.rmContext.getRMNodes().keySet()){
+    	totalReal+= this.rmContext.getRMNodes().get(node).getCurrentRealMemory();
+    }
+    LOG.info("TOTAL real "+totalReal);
     // 2. Check if it's a registered node
     RMNode rmNode = this.rmContext.getRMNodes().get(nodeId);
     if (rmNode == null) {

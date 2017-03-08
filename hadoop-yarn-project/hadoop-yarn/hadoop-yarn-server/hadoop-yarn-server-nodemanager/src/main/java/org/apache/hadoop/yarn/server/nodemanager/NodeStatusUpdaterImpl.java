@@ -366,7 +366,7 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
         NodeStatus.newInstance(nodeId, responseId, containersStatuses,
           createKeepAliveApplicationList(), nodeHealthStatus);
     
-    LOG.info("update real: "+nodeStatus.getNodeHealthStatus().getRealMemory());
+  
 
     return nodeStatus;
   }
@@ -610,7 +610,7 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
                   NodeStatusUpdaterImpl.this.context.getNMTokenSecretManager()
                     .getCurrentKey());
             
-            LOG.info("update real2: "+request.getNodeStatus().getNodeHealthStatus().getRealMemory());
+           
 
             response = resourceTracker.nodeHeartbeat(request);
             //get next heartbeat interval from response
