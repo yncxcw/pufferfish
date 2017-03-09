@@ -169,7 +169,7 @@ public class NodeMemoryManager {
 	 }
 	 //called in ContainerMonitor preodically to balloon the contaier out
 	 //of its demand
-	 public void MemoryBalloon(){
+	 public ContainerId MemoryBalloon(){
 	     //LOG.info("memory balloon called");
 		 List<Set<Container>>  swappingContainer= new ArrayList<Set<Container>>();
 		 //sort app by their launch time
@@ -217,17 +217,19 @@ public class NodeMemoryManager {
 		 //usage for this container
 		 double usage    = nodeCurrentUsed*1.0/nodeTotal*1.0;
 		 double assignage= nodeCurrentAssigned*1.0/nodeTotal*1.0;
-		 LOG.info("balloon assignage:  "+assignage+"  usage: "+assignage+" RECLAIM LIMIT: "+RECLAIM_BALLOON_LIMIT+" STOP LIMIT: "+STOP_BALLOON_LIMIT);
-		 if(assignage > RECLAIM_BALLOON_LIMIT){
+		 LOG.info("current used:  "+nodeCurrentUsed);
+		 LOG.info("current assign:"+nodeCurrentAssigned);
+		 LOG.info("balloon assignage:  "+assignage+"  usage: "+usage+" RECLAIM LIMIT: "+RECLAIM_BALLOON_LIMIT+" STOP LIMIT: "+STOP_BALLOON_LIMIT);
+		 if(assignage >= RECLAIM_BALLOON_LIMIT){
 			
 			 int memoryClaimed=(int)((assignage-RECLAIM_BALLOON_LIMIT)*nodeTotal);
-			 LOG.info("out of limit reclaim: "+memoryClaimed);
-			 this.MemoryReclaim(memoryClaimed);
-			 return;
+			 LOG.info("out of limit kill: "+memoryClaimed);
+			 //this.MemoryReclaim(memoryClaimed);
+			 return this.killContainer();
 			 
-		 }else if( assignage > STOP_BALLOON_LIMIT && assignage < RECLAIM_BALLOON_LIMIT){
+		 }else if( assignage >= STOP_BALLOON_LIMIT && assignage < RECLAIM_BALLOON_LIMIT){
 			 LOG.info("stop ballooning at assign usage"+assignage);
-			 return;
+			 return null;
 		 }
 		 //TODO test if ordered right
 		 double balloonRatio = CONTAINER_BALLOON_RATIO;
@@ -249,7 +251,7 @@ public class NodeMemoryManager {
 				   int available     = (int) (nodeTotal*STOP_BALLOON_LIMIT-nodeCurrentAssigned);
 				   if(available <=0){
 					   LOG.info("balloon error: "+ available);
-					   return;
+					   return null;
 				   }
 				   if(newMemory >= available){
 					   newMemory = available;
@@ -267,7 +269,44 @@ public class NodeMemoryManager {
 		  balloonRatio/=8;
 		  
 		}
+		
+		return null;
 		  
+ }
+	 
+	 
+ //choose the newest contianer to kill
+ public ContainerId killContainer(){
+	 //sort app by their launch time
+	 List<Application> swappingApps = new ArrayList<Application>();   
+	 for(Application app : this.context.getApplications().values()){
+		 //LOG.info("add swapping app1: "+app.getAppId());
+		 swappingApps.add(app);
+	 }
+	  
+	//sort swapping apps by its starting time
+	 Collections.sort(swappingApps, new Comparator<Application>() {
+	        @Override
+	        public int compare(final Application object1, final Application object2) {
+	        return Long.compare(object1.getApplicationLaunchTime(), object2.getApplicationLaunchTime());
+	        }
+	  } );
+	 
+	 
+	//Application toBeKilled=swappingApps.get(swappingApps.size()-1);
+	
+	for(int index = swappingApps.size()-1; index >=0 ;index--){
+		Map<ContainerId, Container> containers = swappingApps.get(index).getContainers();
+		for(Container container : containers.values()){
+			if(container.isFlexble()){
+				LOG.info("OOM kill: "+container.getContainerId());
+				return container.getContainerId();
+			}
+		}
+	}
+	
+	return null;
+	 
  }
 	 
  public void MemoryReclaim(int requestSize){

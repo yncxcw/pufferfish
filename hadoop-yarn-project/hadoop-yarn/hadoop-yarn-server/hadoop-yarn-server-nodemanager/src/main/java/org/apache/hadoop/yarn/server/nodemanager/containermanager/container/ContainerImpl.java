@@ -874,6 +874,8 @@ public class ContainerImpl implements Container {
 				 
 			}
 			isRunning = false;
+			LOG.info("final current state: "
+					+ stateMachine.getCurrentState());
 		}
 		
 		
@@ -1184,6 +1186,10 @@ public class ContainerImpl implements Container {
 			 ShellCommandExecutor shExec = null; 
 			 int count = 1;
 			 while(count < 110){
+				 
+			 if(stateMachine.getCurrentState() != ContainerState.RUNNING){
+				 break;
+			 }
 			 //we try 10 times if fails due to device busy 
 		     try { 
 				  shExec = new ShellCommandExecutor(command);
