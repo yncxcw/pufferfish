@@ -71,6 +71,12 @@ public class NodeMemoryManager {
 	 //used to lock when write
 	 Lock writeLock;
 	 
+	 //kill trties times for memory conflicts kill
+	 int killRetries;
+	 
+	 //last time killed ?
+	 boolean lastKilled;
+	 
 	 public NodeMemoryManager(Context context,Configuration conf){
 		 this.DEFAULT_NODE_SIZE = 128*1024;
 		 this.context   = context;
@@ -90,10 +96,12 @@ public class NodeMemoryManager {
 				                                       YarnConfiguration.DEFAULT_RATIO__RECLAIM_BALLOON_LIMIT);
 		 
 		 //keep for 2 minute
-		 this.SWAP_KEEP_TIME          = 60;
+		 this.SWAP_KEEP_TIME          = 90;
 		 ReadWriteLock readWriteLock  = new ReentrantReadWriteLock();
-		 this.readLock  = readWriteLock.readLock();
-		 this.writeLock = readWriteLock.writeLock();
+		 this.readLock    = readWriteLock.readLock();
+		 this.writeLock   = readWriteLock.writeLock();
+		 this.killRetries = 0;
+		 this.lastKilled  = false;
 	 }
 	  
 	 
@@ -213,6 +221,10 @@ public class NodeMemoryManager {
 		 
 		 }
 		 
+		 
+		 //resolve potential conflicts, if all containers are swapppin and memory is used up, then kill them
+		
+		 
 		 //out of the limit, we do nothing, since ContainerImpl will throttle the cpu
 		 //usage for this container
 		 double usage    = nodeCurrentUsed*1.0/nodeTotal*1.0;
@@ -220,16 +232,38 @@ public class NodeMemoryManager {
 		 LOG.info("current used:  "+nodeCurrentUsed);
 		 LOG.info("current assign:"+nodeCurrentAssigned);
 		 LOG.info("balloon assignage:  "+assignage+"  usage: "+usage+" RECLAIM LIMIT: "+RECLAIM_BALLOON_LIMIT+" STOP LIMIT: "+STOP_BALLOON_LIMIT);
-		 if(assignage >= RECLAIM_BALLOON_LIMIT){
+		 if(assignage >= RECLAIM_BALLOON_LIMIT-0.001){
 			
 			 int memoryClaimed=(int)((assignage-RECLAIM_BALLOON_LIMIT)*nodeTotal);
 			 LOG.info("out of limit kill: "+memoryClaimed);
 			 //this.MemoryReclaim(memoryClaimed);
 			 return this.killContainer();
 			 
-		 }else if( assignage >= STOP_BALLOON_LIMIT && assignage < RECLAIM_BALLOON_LIMIT){
-			 LOG.info("stop ballooning at assign usage"+assignage);
-			 return null;
+		 }else if( assignage >= STOP_BALLOON_LIMIT-0.001 && assignage < RECLAIM_BALLOON_LIMIT){
+			 //resolve potential conflicts, if all containers are swapppin and memory is used up, then kill them
+			 boolean shouldKill=true;
+			 for(ContainerId containerId: containerToMemoryUsage.keySet()){
+				 Container container= this.context.getContainers().get(containerId);
+				 if(container.isFlexble() && !container.getContainerMonitor().getIsOutofMemory()){
+					 shouldKill=false;
+				 }
+			 }
+			 if(shouldKill && lastKilled){
+				 killRetries++;
+			 }else{
+				 killRetries=0;
+			 }
+			 
+			 lastKilled = shouldKill;
+			 
+			 if(killRetries > 3){
+			   LOG.info("memory conflicts kill");	 
+			   this.killRetries = 0;
+			   return this.killContainer();
+			 }else{
+			  LOG.info("stop ballooning at assign usage: "+assignage);
+			  return null;
+			 }
 		 }
 		 //TODO test if ordered right
 		 double balloonRatio = CONTAINER_BALLOON_RATIO;

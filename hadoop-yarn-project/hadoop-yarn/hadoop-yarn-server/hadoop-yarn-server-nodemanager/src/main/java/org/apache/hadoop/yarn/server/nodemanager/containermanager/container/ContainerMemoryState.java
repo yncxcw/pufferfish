@@ -14,6 +14,12 @@ public enum ContainerMemoryState {
 	  /** 
 	   *   Recoverying mode
 	   */
-	  RECOVERYING
+	  RECOVERYING,
+	  
+	  /**
+	   * Finished mode
+	   * 
+	   */
+	  FINISH
 
 }

@@ -768,7 +768,7 @@ public class ContainerImpl implements Container {
 				ContainerMemoryEvent event = getContainerMemoryEvent();
 				//ContainerMemoryState nextState;
 			    LOG.info("$$$  "+this.name+" "+memoryState);
-			    LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
+			   //LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
 				
 				switch(memoryState){
 				
@@ -874,6 +874,7 @@ public class ContainerImpl implements Container {
 				 
 			}
 			isRunning = false;
+			memoryState = ContainerMemoryState.FINISH;
 			LOG.info("final current state: "
 					+ stateMachine.getCurrentState());
 		}
@@ -1023,6 +1024,21 @@ public class ContainerImpl implements Container {
 			  
 			  
 		   }
+		 
+		 
+		 public void DockerCommandkill(){
+			if(!isFlexible){
+		    		  return;
+		     }
+			List<String> commandPrefix = new ArrayList<String>();
+			commandPrefix.add("docker");
+			commandPrefix.add("kill");
+			commandPrefix.add(dockerId);
+			String[] commandkill = commandPrefix.toArray(new String[commandPrefix.size()]);
+			LOG.info("run docker kill: "+containerId);
+			runDockerUpdateCommand(commandkill);
+				
+		 }
 		
 		
 		//pull by monitor, in termes of M
@@ -1078,7 +1094,7 @@ public class ContainerImpl implements Container {
 		    
 			if(currentUsedMemory+currentUsedSwap>limitedMemory){
 				
-			LOG.info("out of memory contianer detected: "+this.name);
+			//LOG.info("out of memory contianer detected: "+this.name);
 				return true;
 			}else{
 				
@@ -1096,7 +1112,7 @@ public class ContainerImpl implements Container {
 		    
 			if(!getIsOutofMemory()&&currentUsedSwap > 0){
 				
-			LOG.info("swapping container detected: "+this.name);
+			//LOG.info("swapping container detected: "+this.name);
 				
 			    return true;
 			}else{
@@ -1111,14 +1127,17 @@ public class ContainerImpl implements Container {
 				return false;
 			updateCgroupValues();
 			
-			if(!getIsOutofMemory()&&currentUsedSwap <= 500 ){
-				LOG.info("non-swapping container detected: "+this.name);
+			if(!getIsOutofMemory()&&currentUsedSwap <= (long)(0.1*currentUsedMemory) ){
+		    //LOG.info("non-swapping container detected: "+this.name);
 				return true;
 			}else{
 				return false;
 			}
 			
 		}
+		
+		
+		
 		
 		
 		public boolean getIsSlack(){
@@ -1187,9 +1206,6 @@ public class ContainerImpl implements Container {
 			 int count = 1;
 			 while(count < 110){
 				 
-			 if(stateMachine.getCurrentState() != ContainerState.RUNNING){
-				 break;
-			 }
 			 //we try 10 times if fails due to device busy 
 		     try { 
 				  shExec = new ShellCommandExecutor(command);

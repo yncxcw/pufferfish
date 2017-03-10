@@ -385,7 +385,7 @@ public class ContainerLaunch implements Callable<Integer> {
       return;
     }
 
-    LOG.debug("Marking container " + containerIdStr + " as inactive");
+    LOG.info("Marking container " + containerIdStr + " as inactive");
     // this should ensure that if the container process has not launched 
     // by this time, it will never be launched
     exec.deactivateContainer(containerId);
@@ -398,10 +398,19 @@ public class ContainerLaunch implements Callable<Integer> {
     
     // however the container process may have already started
     try {
-
+       //kill docker based flex containers
+       if(container.isFlexble()){
+             LOG.info("kill the entire docker");
+             new Thread(){
+           	 public void run(){
+           		 container.getContainerMonitor().DockerCommandkill();
+           	 } 
+             }.start();
+      }
       // get process id from pid file if available
       // else if shell is still active, get it from the shell
       String processId = null;
+      
       if (pidFilePath != null) {
         processId = getContainerPid(pidFilePath);
       }
@@ -419,15 +428,18 @@ public class ContainerLaunch implements Callable<Integer> {
 
         boolean result = exec.signalContainer(user, processId, signal);
 
-        LOG.debug("Sent signal " + signal + " to pid " + processId
+        LOG.info("Sent signal " + signal + " to pid " + processId
           + " as user " + user
           + " for container " + containerIdStr
           + ", result=" + (result? "success" : "failed"));
 
         if (sleepDelayBeforeSigKill > 0) {
+          LOG.info("sleep delayed");
           new DelayedProcessKiller(container, user,
               processId, sleepDelayBeforeSigKill, Signal.KILL, exec).start();
         }
+        
+       
       }
     } catch (Exception e) {
       String message =
