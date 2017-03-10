@@ -619,6 +619,10 @@ public class ContainerImpl implements Container {
 	    private ContainerMemoryState memoryState;
 	  
 		private String memoryPath;
+		
+		private String cpuPath;
+		
+		private String cpuSetPath;
 
 		private String name;
 		
@@ -758,6 +762,8 @@ public class ContainerImpl implements Container {
 		    //initial the memory path
 		    LOG.info(name+" get dockerId "+dockerId);
 		    memoryPath= "/sys/fs/cgroup/memory/docker/"+dockerId+"/";
+		    cpuPath   = "/sys/fs/cgroup/cpu/docker/"+dockerId+"/";
+		    cpuSetPath= "/sys/fs/cgroup/cpuset/docker/"+dockerId+"/";
 		    
 			isRunning = true;
 			//int count = 3;
@@ -769,7 +775,8 @@ public class ContainerImpl implements Container {
 				//ContainerMemoryState nextState;
 			    LOG.info("$$$  "+this.name+" "+memoryState);
 			   //LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
-				
+				printCPUQuota();
+				printCPUSet();
 				switch(memoryState){
 				
 				   case  RUNNING:
@@ -1040,6 +1047,37 @@ public class ContainerImpl implements Container {
 				
 		 }
 		
+		
+		 
+		public void printCPUQuota(){
+			if(!isRunning)
+				return;
+			
+			String path=cpuPath+"cpu.cfs_quota_us";
+			List<String> readlines=readFileLines(path);
+			String cpuQuota=null;
+			if(readlines!=null){
+			  cpuQuota = readlines.get(0);
+			//LOG.info("get limited memory:"+name+"  "+limitedMemory);
+			}
+			
+			LOG.info("Container quota "+containerId+" "+cpuQuota);
+		} 
+		 
+		public void printCPUSet(){
+			if(!isRunning)
+				return;
+			
+			String path=cpuSetPath+"cpuset.cpus";
+			List<String> readlines=readFileLines(path);
+			String cpuSet=null;
+			if(readlines!=null){
+			  cpuSet = readlines.get(0);
+			//LOG.info("get limited memory:"+name+"  "+limitedMemory);
+			}
+			
+			LOG.info("Container set  "+containerId+" "+cpuSet);
+		}
 		
 		//pull by monitor, in termes of M
 		public long getCurrentLimitedMemory(){

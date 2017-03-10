@@ -399,13 +399,13 @@ public class ContainerLaunch implements Callable<Integer> {
     // however the container process may have already started
     try {
        //kill docker based flex containers
-       if(container.isFlexble()){
+       if(container.isFlexble() && container.getContainerState() == ContainerState.KILLING){
              LOG.info("kill the entire docker");
              new Thread(){
            	 public void run(){
            		 container.getContainerMonitor().DockerCommandkill();
            	 } 
-             }.start();
+        }.start();
       }
       // get process id from pid file if available
       // else if shell is still active, get it from the shell
