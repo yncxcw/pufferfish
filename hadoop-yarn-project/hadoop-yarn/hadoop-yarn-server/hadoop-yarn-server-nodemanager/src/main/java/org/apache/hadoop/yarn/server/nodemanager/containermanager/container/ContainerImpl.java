@@ -1243,7 +1243,11 @@ public class ContainerImpl implements Container {
 			 ShellCommandExecutor shExec = null; 
 			 int count = 1;
 			 while(count < 110){
-				 
+				
+             if(!(stateMachine.getCurrentState() == ContainerState.RUNNING || stateMachine.getCurrentState() == ContainerState.KILLING)){
+                
+                 break;
+              } 
 			 //we try 10 times if fails due to device busy 
 		     try { 
 				  shExec = new ShellCommandExecutor(command);
