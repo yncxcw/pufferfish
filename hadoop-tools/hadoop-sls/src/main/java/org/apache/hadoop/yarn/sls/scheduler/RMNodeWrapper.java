@@ -164,4 +164,10 @@ public long getCurrentActualMemory() {
 	// TODO Auto-generated method stub
 	return 0;
 }
+
+@Override
+public long getCurrentRealMemory() {
+	// TODO Auto-generated method stub
+	return 0;
+}
 }
