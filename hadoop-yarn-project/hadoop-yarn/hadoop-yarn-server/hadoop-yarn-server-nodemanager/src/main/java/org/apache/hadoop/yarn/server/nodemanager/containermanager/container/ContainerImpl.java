@@ -715,16 +715,16 @@ public class ContainerImpl implements Container {
 		
 		//poll from the synchronized queue
 		public synchronized ContainerMemoryEvent getContainerMemoryEvent(){
-			   LOG.info("event queue length: "+cmeQueue.size());
+			   //LOG.info("event queue length: "+cmeQueue.size());
 			   if(cmeQueue.isEmpty()){
-				   LOG.info("empty event");
+				   //LOG.info("empty event");
 				   return new ContainerMemoryEvent(-1,0);
 			   }
 			   long average=0;
 			   int  count  =0;
 			   
 			   ContainerMemoryEvent topEvent=cmeQueue.poll();
-			   LOG.info("top event: "+topEvent.type+" value: "+topEvent.value);
+			   //LOG.info("top event: "+topEvent.type+" value: "+topEvent.value);
 			   average = topEvent.getValue();
 			   count   = 1;
 			   //if there are any other event, merge same types of event
@@ -774,9 +774,9 @@ public class ContainerImpl implements Container {
 				ContainerMemoryEvent event = getContainerMemoryEvent();
 				//ContainerMemoryState nextState;
 			    LOG.info("$$$  "+this.name+" "+memoryState);
-			   //LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
-				printCPUQuota();
-				printCPUSet();
+			    //LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
+				//printCPUQuota();
+				//printCPUSet();
 				switch(memoryState){
 				
 				   case  RUNNING:

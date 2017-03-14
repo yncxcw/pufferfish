@@ -549,7 +549,7 @@ public class ContainersMonitorImpl extends AbstractService implements
         }
         
         
-        LOG.info("come here");
+       // LOG.info("come here");
         if(toBekilled != null){
         
         LOG.info("choose "+toBekilled+" to kill");
