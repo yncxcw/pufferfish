@@ -774,9 +774,9 @@ public class ContainerImpl implements Container {
 				ContainerMemoryEvent event = getContainerMemoryEvent();
 				//ContainerMemoryState nextState;
 			    LOG.info("$$$  "+this.name+" "+memoryState);
-			    //LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
-				//printCPUQuota();
-				//printCPUSet();
+			    LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
+				printCPUQuota();
+				printCPUSet();
 				switch(memoryState){
 				
 				   case  RUNNING:
@@ -935,17 +935,14 @@ public class ContainerImpl implements Container {
 		//return false
 		private boolean updateConfiguredMemory(long memory){
 			
-	        LOG.info("update container memory: "+name+" old: "+limitedMemory
-	        		 +"new: "+memory);
-
-	        
+	        LOG.info("update container memory: "+name+" old: "+limitedMemory+"new: "+memory);
 	        if(memory > currentUsedMemory){
 	        	DockerCommandMemory(memory);
-	        	LOG.info("balloon-nswap: "+this.name+" from "+this.limitedMemory+"to: "+memory);
+	        	//LOG.info("balloon-nswap: "+this.name+" from "+this.limitedMemory+"to: "+memory);
 	        	return false;
 	        }else{
                 if(memory < currentUsedMemory*0.5){
-                    LOG.info("delay shrink");
+                    //LOG.info("delay shrink");
                     memory = (long)(currentUsedMemory*0.5);
                     
                 }
@@ -956,12 +953,12 @@ public class ContainerImpl implements Container {
 	        		if(currentUsedMemory - 512 > memory)
 	        			currentUsedMemory = currentUsedMemory - 512;
 	        		DockerCommandMemory(currentUsedMemory);
-                    LOG.info("shrink-swap "+this.name+" from "+this.limitedMemory+" to "+this.currentUsedMemory);
+                    //LOG.info("shrink-swap "+this.name+" from "+this.limitedMemory+" to "+this.currentUsedMemory);
 
                 }
 	        	DockerCommandMemory(memory);
 	        	long endTime=System.currentTimeMillis();     //end time
-	        	LOG.info("shringk-swap "+this.name+" time: "+(endTime-startTime)+"size: "+size);
+	        	//LOG.info("shringk-swap "+this.name+" time: "+(endTime-startTime)+"size: "+size);
                 return true;
 	        }
 	        
@@ -1239,7 +1236,7 @@ public class ContainerImpl implements Container {
 				 commandString += c;
 				 commandString += " ";
 			 }
-			 LOG.info("run docker commands:"+commandString);
+			
 			 ShellCommandExecutor shExec = null; 
 			 int count = 1;
 			 while(count < 110){
@@ -1248,6 +1245,10 @@ public class ContainerImpl implements Container {
                 
                  break;
               } 
+             boolean error=false;
+             //add lock before execution
+             context.getNodeMemoryManager().getDockerLock().lock();;
+             LOG.info("run docker commands:"+commandString);
 			 //we try 10 times if fails due to device busy 
 		     try { 
 				  shExec = new ShellCommandExecutor(command);
@@ -1259,25 +1260,31 @@ public class ContainerImpl implements Container {
 			            + name + " and exit code: " + exitCode, e); 
 			      count++;
                  LOG.info("tries for "+count);
-			      
-			    try {
+                 error=true;
+			    } finally {
+			      if (shExec != null) {
+			        shExec.close();
+			      }
+			      LOG.info("finish execution successfully  "+name);
+			      context.getNodeMemoryManager().getDockerLock().unlock();
+			    }
+		     
+		     if(error){
+		    	//sleep and retries
+		    	try {
 					Thread.sleep(100*count);
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-			      continue;
-			      
-			    } finally {
-			      if (shExec != null) {
-			        shExec.close();
-			      }
-			    }
+				continue;
+		     }
+		     
 		      
 		        break; 
 			 }
 			
-			 LOG.info("finish execution successfully  "+name);
+			
 			 return shExec.getOutput().trim();
 		   }
 		

@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
+import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -77,6 +77,9 @@ public class NodeMemoryManager {
 	 //last time killed ?
 	 boolean lastKilled;
 	 
+	 //docker command access lock
+	 private final ReadWriteLock dockerLock;
+	 
 	 public NodeMemoryManager(Context context,Configuration conf){
 		 this.DEFAULT_NODE_SIZE = 128*1024;
 		 this.context   = context;
@@ -102,9 +105,15 @@ public class NodeMemoryManager {
 		 this.writeLock   = readWriteLock.writeLock();
 		 this.killRetries = 0;
 		 this.lastKilled  = false;
+		 this.dockerLock  =new ReentrantReadWriteLock();
 	 }
 	  
 	 
+	 
+	 public Lock getDockerLock(){
+		 
+		 return this.dockerLock.writeLock();
+	 }
 	 
 	 private void updateMetrics(){
 		 try {
@@ -153,7 +162,7 @@ public class NodeMemoryManager {
 				 
 				 //add to swapping group
 				 if(container.getContainerMonitor().getMemoryState()==ContainerMemoryState.SUSPENDING){
-	                 LOG.info("add swapping container"+container.getContainerId());
+	                 //LOG.info("add swapping container"+container.getContainerId());
 	            	 this.containerToSwap.put(containerId, SWAP_KEEP_TIME);
 	            	 container.getContainerMonitor().setBallooningWindow(true);
 	             
@@ -164,10 +173,10 @@ public class NodeMemoryManager {
 					 this.containerToSwap.put(containerId, currentWaitTime);
 					 if(this.containerToSwap.get(containerId) <0){
 						 this.containerToSwap.remove(containerId);
-						 LOG.info(containerId+" is removed");
+						 //LOG.info(containerId+" is removed");
 						 container.getContainerMonitor().setBallooningWindow(false);
 					 }else{
-						 LOG.info("currentWait: "+containerId+"time: "+currentWaitTime);
+						 //LOG.info("currentWait: "+containerId+"time: "+currentWaitTime);
 					 }
 				 } 
 			 }
@@ -301,7 +310,7 @@ public class NodeMemoryManager {
 				   int available     = (int) (nodeTotal*STOP_BALLOON_LIMIT-nodeCurrentAssigned);
 				   if(available <=0){
 					   LOG.info("balloon error: "+ available);
-					   return null;
+					   //return null;
 				   }
 				   if(newMemory >= available){
 					   newMemory = available;
@@ -309,7 +318,7 @@ public class NodeMemoryManager {
 				   }
 			       long newCntMemory = oldMemory+newMemory;
 
-			        LOG.info("### container "+cnt.getContainerId()+" ratio "+balloonRatio+" from "+oldMemory+" to "+newCntMemory+" ###");
+			        //LOG.info("### container "+cnt.getContainerId()+" ratio "+balloonRatio+" from "+oldMemory+" to "+newCntMemory+" ###");
 			        ContainerMemoryEvent memoryEvent = new ContainerMemoryEvent(0,(int)newCntMemory);
 			        cnt.getContainerMonitor().putContainerMemoryEvent(memoryEvent);
 			        nodeCurrentAssigned+=newMemory;
