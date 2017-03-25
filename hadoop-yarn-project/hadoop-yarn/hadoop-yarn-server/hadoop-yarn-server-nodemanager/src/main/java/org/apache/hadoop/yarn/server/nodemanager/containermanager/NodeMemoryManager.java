@@ -251,14 +251,15 @@ public class NodeMemoryManager {
 		 }else if( assignage >= STOP_BALLOON_LIMIT-0.001 && assignage < RECLAIM_BALLOON_LIMIT){
 			 //resolve potential conflicts, if all containers are swapppin and memory is used up, then kill them
 			 boolean shouldKill=false;
-			 /*naive kill only all containers swapping
+			 /*
+			 naive kill only all containers swapping
 			 for(ContainerId containerId: containerToMemoryUsage.keySet()){
 				 Container container= this.context.getContainers().get(containerId);
 				 if(container.isFlexble() && !container.getContainerMonitor().getIsOutofMemory()){
 					 shouldKill=false;
 				 }
 			 }
-			 */
+			 
 			 for(Application application : swappingApps){
 			   Collection<Container> containers = application.getContainers().values();
 			   for(Container container : containers){
@@ -270,7 +271,17 @@ public class NodeMemoryManager {
 				   }
 			   }
 			 }
-			 
+			 */
+			 //get highest priority job
+			 Set<Container> cnts=swappingContainer.get(0);
+
+			 for(Container container : cnts){
+				if(container.getContainerMonitor().getIsOutofMemory()){
+					shouldKill=true;
+					break;
+				}  	  
+				 
+			 }
 			 
 			 if(shouldKill && lastKilled){
 				 killRetries++;

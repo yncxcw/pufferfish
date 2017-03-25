@@ -1129,7 +1129,8 @@ public class ContainerImpl implements Container {
 		    
 			if(currentUsedMemory+currentUsedSwap>limitedMemory){
 				
-			//LOG.info("out of memory contianer detected: "+this.name);
+			LOG.info("out of memory contianer detected: "+this.name+" "+currentUsedMemory
+					+" "+currentUsedSwap+" "+limitedMemory);
 				return true;
 			}else{
 				
