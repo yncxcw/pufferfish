@@ -815,7 +815,7 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
       rmNode.actualMemory=remoteNodeHealthStatus.getActualMemory();
       rmNode.realMemory  =remoteNodeHealthStatus.getRealMemory();
       
-      LOG.info("MBalloon NodeImpl :"+rmNode.getHostName()+" actual mem: "+rmNode.actualMemory+" real mem: "+rmNode.realMemory);
+      //LOG.info("MBalloon NodeImpl :"+rmNode.getHostName()+" actual mem: "+rmNode.actualMemory+" real mem: "+rmNode.realMemory);
       
       rmNode.handleContainerStatus(statusEvent.getContainers());
 

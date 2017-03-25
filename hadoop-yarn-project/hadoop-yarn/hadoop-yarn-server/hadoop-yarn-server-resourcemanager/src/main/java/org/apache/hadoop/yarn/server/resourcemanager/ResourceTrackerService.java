@@ -396,7 +396,13 @@ public class ResourceTrackerService extends AbstractService implements
     for(NodeId node : this.rmContext.getRMNodes().keySet()){
     	totalReal+= this.rmContext.getRMNodes().get(node).getCurrentRealMemory();
     }
+    long totalFree=0;
+    for(NodeId node : this.rmContext.getRMNodes().keySet()){
+    	totalFree+=  this.rmContext.getRMNodes().get(node).getCurrentActualMemory();
+    }
+    
     LOG.info("TOTAL real "+totalReal);
+    LOG.info("TOTAL free "+totalFree);
     // 2. Check if it's a registered node
     RMNode rmNode = this.rmContext.getRMNodes().get(nodeId);
     if (rmNode == null) {
