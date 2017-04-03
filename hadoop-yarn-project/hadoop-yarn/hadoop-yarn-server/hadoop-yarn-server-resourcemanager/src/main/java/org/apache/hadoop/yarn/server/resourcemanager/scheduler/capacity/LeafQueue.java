@@ -1567,18 +1567,24 @@ public class LeafQueue extends AbstractCSQueue {
     	  
     	  }else{
     		 //compute average Flex container on each node
-    		 double aveFlexContainers=0; 
+    		 List<Integer> flexContainers=new ArrayList<Integer>(); 
     		 int nodeFlexContainers=0;
     		 
     		 for(FiCaSchedulerNode ficaNode : this.csContext.getAllNode()){
-        		 aveFlexContainers = aveFlexContainers+ficaNode.getCurrentRunningFlexContainers();
+    			    
+        		 flexContainers.add(ficaNode.getCurrentRunningFlexContainers());
         	  }
-        	  aveFlexContainers =1.0*aveFlexContainers/this.csContext.getAllNode().size();
-    	      nodeFlexContainers=node.getCurrentRunningFlexContainers();
+        	 
+    		  Collections.sort(flexContainers);
+    		  //less than least 10%
+    		  int targetNumber = flexContainers.get((int)(0.1*flexContainers.size()));
     	      
-    	      if(aveFlexContainers >= nodeFlexContainers){
+    		  nodeFlexContainers=node.getCurrentRunningFlexContainers();
+    	      
+    	      //try to allocate to min
+    	      if(targetNumber >= nodeFlexContainers){
     	    	  shouldAllocation = true;
-    	    	  LOG.info("memflexy ave: "+aveFlexContainers+
+    	    	  LOG.info("memflexy 0.1: "+targetNumber+
     	    			  " node: "+nodeFlexContainers+" app: "+application.getApplicationId());
     	      }else{
     	    	  
