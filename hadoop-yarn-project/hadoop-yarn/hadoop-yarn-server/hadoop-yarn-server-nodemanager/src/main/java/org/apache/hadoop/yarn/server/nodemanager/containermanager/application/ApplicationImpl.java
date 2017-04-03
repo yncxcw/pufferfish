@@ -500,6 +500,7 @@ public class ApplicationImpl implements Application {
 @Override
 public long getApplicationLaunchTime() {
 	
-	return this.applicationLaunchTime;
+	LOG.info("app id"+this.getAppId().getClusterTimestamp()*1000+(long)(getAppId().getId()));
+	return this.getAppId().getClusterTimestamp()*1000+(long)(getAppId().getId());
 }
 }

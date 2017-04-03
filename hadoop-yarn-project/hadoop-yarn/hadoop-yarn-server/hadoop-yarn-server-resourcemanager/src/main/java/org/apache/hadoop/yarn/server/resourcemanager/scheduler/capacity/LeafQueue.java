@@ -1547,9 +1547,12 @@ public class LeafQueue extends AbstractCSQueue {
     // Can we allocate a container on this node?
     int availableContainers = 
         resourceCalculator.computeAvailableContainers(available, capability);
-    
+    //we launch this flex container only if we have double free space
+    int flexActualAvailable     =
+    	resourceCalculator.computeAvailableContainers(actualResource, Resources.multiply(capability, 2));
+
     int actualAvailable     =
-    	resourceCalculator.computeAvailableContainers(actualResource, capability);
+    		resourceCalculator.computeAvailableContainers(actualResource, capability);
 
     boolean isFlex = application.getFlex();
     
@@ -1560,7 +1563,7 @@ public class LeafQueue extends AbstractCSQueue {
     	//if this is a flex application
     	if(isFlex){
     	  //give up allocation	
-    	  if(actualAvailable <= 0){
+    	  if(flexActualAvailable <= 0){
     		 
     		  shouldAllocation=false;
     		  LOG.info("memflexn actual memory give up for "+application.getApplicationAttemptId());

@@ -775,8 +775,8 @@ public class ContainerImpl implements Container {
 				//ContainerMemoryState nextState;
 			    LOG.info("$$$  "+this.name+" "+memoryState);
 			    LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
-				printCPUQuota();
-				printCPUSet();
+				//printCPUQuota();
+				//printCPUSet();
 				switch(memoryState){
 				
 				   case  RUNNING:
@@ -1164,7 +1164,7 @@ public class ContainerImpl implements Container {
 			updateCgroupValues();
 			
 			if(!getIsOutofMemory()&&currentUsedSwap <= (long)(0.1*currentUsedMemory) ){
-		    //LOG.info("non-swapping container detected: "+this.name);
+		    LOG.info("non-swapping container detected: "+this.name);
 				return true;
 			}else{
 				return false;
@@ -1269,7 +1269,7 @@ public class ContainerImpl implements Container {
 			      LOG.info(name+" finish execution successfully");
 			      //sleep for 100 mill seconds,before relase lock
 			      try{
-			      Thread.sleep(100);
+			      Thread.sleep(200);
 			      }catch(InterruptedException e1){
 			    	  e1.printStackTrace();
 			      }
