@@ -1266,7 +1266,13 @@ public class ContainerImpl implements Container {
 			      if (shExec != null) {
 			        shExec.close();
 			      }
-			      LOG.info("finish execution successfully  "+name);
+			      LOG.info(name+" finish execution successfully");
+			      //sleep for 100 mill seconds,before relase lock
+			      try{
+			      Thread.sleep(100);
+			      }catch(InterruptedException e1){
+			    	  e1.printStackTrace();
+			      }
 			      context.getNodeMemoryManager().getDockerLock().unlock();
 			    }
 		     
