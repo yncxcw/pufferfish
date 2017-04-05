@@ -774,7 +774,7 @@ public class ContainerImpl implements Container {
 				ContainerMemoryEvent event = getContainerMemoryEvent();
 				//ContainerMemoryState nextState;
 			    LOG.info("$$$  "+this.name+" "+memoryState);
-			    LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
+			    //LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
 				//printCPUQuota();
 				//printCPUSet();
 				switch(memoryState){
@@ -1163,7 +1163,7 @@ public class ContainerImpl implements Container {
 				return false;
 			updateCgroupValues();
 			
-			if(!getIsOutofMemory()&&currentUsedSwap <= (long)(0.1*currentUsedMemory) ){
+			if(!getIsOutofMemory()&&currentUsedSwap <= (long)(0.2*currentUsedMemory) ){
 		    LOG.info("non-swapping container detected: "+this.name);
 				return true;
 			}else{
@@ -1240,7 +1240,7 @@ public class ContainerImpl implements Container {
 			
 			 ShellCommandExecutor shExec = null; 
 			 int count = 1;
-			 while(count < 110){
+			 while(count < 50){
 				
              if(!(stateMachine.getCurrentState() == ContainerState.RUNNING || stateMachine.getCurrentState() == ContainerState.KILLING)){
                 
@@ -1249,7 +1249,7 @@ public class ContainerImpl implements Container {
              boolean error=false;
              //add lock before execution
              context.getNodeMemoryManager().getDockerLock().lock();;
-             LOG.info("run docker commands:"+commandString);
+             LOG.info("run docker commands: "+commandString);
 			 //we try 10 times if fails due to device busy 
 		     try { 
 				  shExec = new ShellCommandExecutor(command);
@@ -1266,10 +1266,10 @@ public class ContainerImpl implements Container {
 			      if (shExec != null) {
 			        shExec.close();
 			      }
-			      LOG.info(name+" finish execution successfully");
-			      //sleep for 100 mill seconds,before relase lock
+			      LOG.info("finish docker commands: "+commandString);
+			      //sleep for 100 mill seconds,before release lock
 			      try{
-			      Thread.sleep(200);
+			      Thread.sleep(400);
 			      }catch(InterruptedException e1){
 			    	  e1.printStackTrace();
 			      }

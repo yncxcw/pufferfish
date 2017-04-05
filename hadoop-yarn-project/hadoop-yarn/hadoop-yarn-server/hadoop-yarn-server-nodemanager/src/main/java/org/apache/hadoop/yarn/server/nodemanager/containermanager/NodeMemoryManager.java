@@ -99,7 +99,7 @@ public class NodeMemoryManager {
 				                                       YarnConfiguration.DEFAULT_RATIO__RECLAIM_BALLOON_LIMIT);
 		 
 		 //keep for 2 minute
-		 this.SWAP_KEEP_TIME          = 90;
+		 this.SWAP_KEEP_TIME          = 60;
 		 ReadWriteLock readWriteLock  = new ReentrantReadWriteLock();
 		 this.readLock    = readWriteLock.readLock();
 		 this.writeLock   = readWriteLock.writeLock();
@@ -220,7 +220,7 @@ public class NodeMemoryManager {
 				 //LOG.info("appid: "+containerId.getApplicationAttemptId().getApplicationId());
 				 if(containerId.getApplicationAttemptId().getApplicationId().equals(application.getAppId())){
 				      scontainers.add(this.context.getContainers().get(containerId));
-				      LOG.info("## swapping container add :"+containerId);
+				      //LOG.info("## swapping container add :"+containerId);
 				 }
 			  }
 			 
@@ -238,8 +238,8 @@ public class NodeMemoryManager {
 		 //usage for this container
 		 double usage    = nodeCurrentUsed*1.0/nodeTotal*1.0;
 		 double assignage= nodeCurrentAssigned*1.0/nodeTotal*1.0;
-		 LOG.info("current used:  "+nodeCurrentUsed);
-		 LOG.info("current assign:"+nodeCurrentAssigned);
+		 //LOG.info("current used:  "+nodeCurrentUsed);
+		 //LOG.info("current assign:"+nodeCurrentAssigned);
 		 LOG.info("balloon assignage:  "+assignage+"  usage: "+usage+" RECLAIM LIMIT: "+RECLAIM_BALLOON_LIMIT+" STOP LIMIT: "+STOP_BALLOON_LIMIT);
 		 if(assignage >= RECLAIM_BALLOON_LIMIT-0.001){
 			
@@ -314,17 +314,22 @@ public class NodeMemoryManager {
 		for(Set<Container> cnts: swappingContainer){
 		  //ballooning containers belonging to same app
 		  for(Container cnt : cnts){
-			    //compute new memory after balloon
-			    //LOG.info("cached swapping container: "+cnt.getContainerId()+"  ratio:"+balloonRatio);
-		        //swappingSize++;
-			    //cnt may be in the swapping windows but not swapping yet
+			  //compute new memory after balloon
+			  //LOG.info("cached swapping container: "+cnt.getContainerId()+"  ratio:"+balloonRatio);
+		      //swappingSize++;
+			  //cnt may be in the swapping windows but not swapping yet
 			  if(cnt.getContainerMonitor().getIsOutofMemory()){
 			       int oldMemory     = (int) cnt.getContainerMonitor().getCurrentLimitedMemory();
 			       int newMemory     = (int) (oldMemory*balloonRatio);
 				   int available     = (int) (nodeTotal*STOP_BALLOON_LIMIT-nodeCurrentAssigned);
+				   //to avoid unnecessary balloon
+				   if(newMemory < 500 && balloonRatio < 0.01){
+					   LOG.info("give up ballooning: "+cnt.getContainerId());
+					   continue;
+				   }
 				   if(available <=0){
 					   LOG.info("balloon error: "+ available);
-					   //return null;
+					   return null;
 				   }
 				   if(newMemory >= available){
 					   newMemory = available;
@@ -332,7 +337,7 @@ public class NodeMemoryManager {
 				   }
 			       long newCntMemory = oldMemory+newMemory;
 
-			        LOG.info("### container "+cnt.getContainerId()+" ratio "+balloonRatio+" from "+oldMemory+" to "+newCntMemory+" ###");
+			        //LOG.info("### container "+cnt.getContainerId()+" ratio "+balloonRatio+" from "+oldMemory+" to "+newCntMemory+" ###");
 			        ContainerMemoryEvent memoryEvent = new ContainerMemoryEvent(0,(int)newCntMemory);
 			        cnt.getContainerMonitor().putContainerMemoryEvent(memoryEvent);
 			        nodeCurrentAssigned+=newMemory;
