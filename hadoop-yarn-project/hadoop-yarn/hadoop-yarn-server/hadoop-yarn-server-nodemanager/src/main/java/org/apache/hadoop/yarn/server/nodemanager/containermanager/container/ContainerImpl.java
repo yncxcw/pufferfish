@@ -720,13 +720,12 @@ public class ContainerImpl implements Container {
 				   //LOG.info("empty event");
 				   return new ContainerMemoryEvent(-1,0);
 			   }
-			   long average=0;
-			   int  count  =0;
+			   
 			   
 			   ContainerMemoryEvent topEvent=cmeQueue.poll();
 			   //LOG.info("top event: "+topEvent.type+" value: "+topEvent.value);
-			   average = topEvent.getValue();
-			   count   = 1;
+			   int average = topEvent.getValue();
+			   int count   = 1;
 			   //if there are any other event, merge same types of event
 			   if(cmeQueue.size() > 0){
 			   while(topEvent.getType()==cmeQueue.peek().getType()){
@@ -737,6 +736,7 @@ public class ContainerImpl implements Container {
 					   break;
 				   }
 			   }
+			   LOG.info(this.name+" memory event found "+count);
 			   topEvent.value=(int)(average/count);
 			   
 			   }
@@ -882,7 +882,7 @@ public class ContainerImpl implements Container {
 			}
 			isRunning = false;
 			memoryState = ContainerMemoryState.FINISH;
-			LOG.info("final current state: "
+			LOG.info(this.name+"final current state: "
 					+ stateMachine.getCurrentState());
 		}
 		
@@ -938,7 +938,7 @@ public class ContainerImpl implements Container {
 	        LOG.info("update container memory: "+name+" old: "+limitedMemory+"new: "+memory);
 	        if(memory > currentUsedMemory){
 	        	DockerCommandMemory(memory);
-	        	//LOG.info("balloon-nswap: "+this.name+" from "+this.limitedMemory+"to: "+memory);
+	        	LOG.info("balloon-nswap: "+this.name+" from "+this.limitedMemory+"to: "+memory);
 	        	return false;
 	        }else{
                 if(memory < currentUsedMemory*0.5){
@@ -1240,7 +1240,7 @@ public class ContainerImpl implements Container {
 			
 			 ShellCommandExecutor shExec = null; 
 			 int count = 1;
-			 while(count < 50){
+			 while(count < 100){
 				
              if(!(stateMachine.getCurrentState() == ContainerState.RUNNING || stateMachine.getCurrentState() == ContainerState.KILLING)){
                 
@@ -1269,7 +1269,7 @@ public class ContainerImpl implements Container {
 			      LOG.info("finish docker commands: "+commandString);
 			      //sleep for 100 mill seconds,before release lock
 			      try{
-			      Thread.sleep(400);
+			      Thread.sleep(500);
 			      }catch(InterruptedException e1){
 			    	  e1.printStackTrace();
 			      }
