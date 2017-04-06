@@ -1040,7 +1040,7 @@ public class ContainerImpl implements Container {
 			commandPrefix.add(dockerId);
 			String[] commandkill = commandPrefix.toArray(new String[commandPrefix.size()]);
 			LOG.info("run docker kill: "+containerId);
-			runDockerUpdateCommand(commandkill);
+			runDockerUpdateCommandNoLock(commandkill);
 				
 		 }
 		
@@ -1230,6 +1230,67 @@ public class ContainerImpl implements Container {
 		}
 		
 		
+		private String runDockerUpdateCommandNoLock(String[] command){
+			//do nothing, if this container is not flexible 
+			 String commandString=new String();
+			 for(String c : command){
+				 commandString += c;
+				 commandString += " ";
+			 }
+			
+			 ShellCommandExecutor shExec = null; 
+			 int count = 1;
+			 while(count < 100){
+				
+            if(!(stateMachine.getCurrentState() == ContainerState.RUNNING || stateMachine.getCurrentState() == ContainerState.KILLING)){
+               
+                break;
+             } 
+            boolean error=false;
+			 //we try 10 times if fails due to device busy 
+		     try { 
+				  shExec = new ShellCommandExecutor(command);
+				  shExec.execute();
+				 
+			    } catch (IOException e) {
+			      int exitCode = shExec.getExitCode();
+			      LOG.warn("Exception from Docker update with container ID: "
+			            + name + " and exit code: " + exitCode, e); 
+			      count++;
+                LOG.info("tries for "+count);
+                error=true;
+			    } finally {
+			      if (shExec != null) {
+			        shExec.close();
+			      }
+			      LOG.info("finish docker commands: "+commandString);
+			      //sleep for 100 mill seconds,before release lock
+			      try{
+			      Thread.sleep(500);
+			      }catch(InterruptedException e1){
+			    	  e1.printStackTrace();
+			      }
+			    }
+		     
+		     if(error){
+		    	//sleep and retries
+		    	try {
+					Thread.sleep(100*count);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				continue;
+		     }
+		     
+		      
+		        break; 
+			 }
+			
+			
+			 return shExec.getOutput().trim();
+			
+		}
 		private String runDockerUpdateCommand(String[] command){
 			//do nothing, if this container is not flexible 
 			 String commandString=new String();

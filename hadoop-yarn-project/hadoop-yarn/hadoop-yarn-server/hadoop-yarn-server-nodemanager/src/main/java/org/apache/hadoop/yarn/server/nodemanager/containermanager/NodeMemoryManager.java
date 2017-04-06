@@ -387,17 +387,19 @@ public class NodeMemoryManager {
 	 
  }
 	 
+ 
+ //only called for regular containers
  public void MemoryReclaim(int requestSize){
     LOG.info("memory reclaim called, current assigned: "+nodeCurrentAssigned+"  current used: "+nodeCurrentUsed+" request: "+requestSize);
     LOG.info("limit: "+nodeTotal*RECLAIM_BALLOON_LIMIT);
 	 //update metrics
 	this.updateMetrics();
 	 //we bypass memory reclaim
-	 if(nodeCurrentAssigned + requestSize < nodeTotal*RECLAIM_BALLOON_LIMIT){
+	 if(nodeCurrentAssigned + requestSize < nodeTotal){
 		 return;
 	 }
 
-	 requestSize = (int)(nodeCurrentAssigned + requestSize-nodeTotal*RECLAIM_BALLOON_LIMIT);
+	 requestSize = (int)(nodeCurrentAssigned + requestSize-nodeTotal);
 
 	 LOG.info("new reclaim: "+requestSize);
 	 
