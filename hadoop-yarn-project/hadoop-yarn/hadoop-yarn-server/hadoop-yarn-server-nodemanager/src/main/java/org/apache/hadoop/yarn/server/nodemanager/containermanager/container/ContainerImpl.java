@@ -773,8 +773,10 @@ public class ContainerImpl implements Container {
 				updateCgroupValues();
 				ContainerMemoryEvent event = getContainerMemoryEvent();
 				//ContainerMemoryState nextState;
-			    LOG.info("$$$  "+this.name+" "+memoryState);
-			    //LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
+				if(isFlexible)
+			      LOG.info("$$$  "+this.name+" "+memoryState);
+				else
+			      LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
 				//printCPUQuota();
 				//printCPUSet();
 				switch(memoryState){
