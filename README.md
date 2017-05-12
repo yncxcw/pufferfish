@@ -26,11 +26,12 @@ In yarn-site.xml
     <value>org.apache.hadoop.yarn.server.nodemanager.DockerContainerExecutor</value>
 </property>
 ````
+````
 <property>
     <name>yarn.nodemanager.docker-container-executor.exec-name</name>
     <value>/usr/bin/docker(path to your docker)</value>
 </property>
-```
+````
 
 
 
