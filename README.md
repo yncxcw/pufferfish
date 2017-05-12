@@ -1,7 +1,9 @@
 # MBalloonYARN
 
 In this project, we enhance Hadoop-YARN with a dynamic and adaptive memory management module. Its mainly functions include:
+
 (1) Alleviate OutOfMemory errors for JVM based framework(e.g., Spark and Hadoop).
+
 (2) Adaptive sizing memory allocation to its realtime needs for each task container to improve cluster utilization
 
 For more information, please refer our paper (Under submission)
