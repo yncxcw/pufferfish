@@ -20,11 +20,11 @@ https://hadoop.apache.org/docs/r2.7.2/hadoop-yarn/hadoop-yarn-site/DockerContain
 I have hacked NodeManager, so you do not need to configure mapreduce.map.env, mapreduce.reduce.env, yarn.app.mapreduce.am.env
 to indicate docker images when you launch mapreduce applications. Here are two configurations you need to do: 
 
-In yarn-site.xml
+in yarn-site.xml
 ```
 <property>
     <name>yarn.nodemanager.container-executor.class</name>
-    <value>org.apache.hadoop.yarn.server.nodemanager.DockerContainerExecutor</value>
+    <value>org.apache.hadoop.yarn.server.nodemanager.dockercontainerexecutor</value>
 </property>
 ````
 ````
@@ -34,8 +34,39 @@ In yarn-site.xml
 </property>
 ````
 
+## MBalloon Configuration
+There are 4 parameters needed to be configured by users, all in yarn-site.xml.
+1. Balloon ratio.
+```
+<property>
+    <name>yarn.nodemanager.balloon.ratio</name>
+    <value>0.4</value>
+</property>
 
+````
+2. Stop ballooing limit(SB).
+````
+<property>
+    <name>yarn.nodemanager.balloon.stop</name>
+    <value>0.8</value>
+</property>
+````
+3. JVM heap size for Flex containers.
+````
+<property>
+    <name>yarn.nodemanager.balloon.jvm-mb</name>
+    <value>65536</value>
+</property>
+````
 
+4. Flex contaienr size. It should be configured at job submission; for MapReduce applications, by setting 
+`mapreduce.map.memory.mb` and `mapreduce.reduce.memory.mb`; For Spark applications, by setting `spark.executor.memory`. 
 
+5. Flex containers type for applications should be set at job submission. We achieve this by utilizing node label expression. 
+For MapReduce, I have some hardcode to tell YARN to recognise this applications as FLEX. But this issue will be
+resolved in future Hadoop Release(e.g., Hadoop-2.8.0/Hadoop3.0.0) For Spark:
+````
+spark.yarn.am.nodeLabelExpression          flex 
+````
 
 
