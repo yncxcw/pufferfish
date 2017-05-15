@@ -9,7 +9,7 @@ In this project, we enhance Hadoop-YARN with a dynamic and adaptive memory manag
 For more information, please refer our paper (Currently under submission).
 
 ## Install and compile
-For compile, plesse refer `BUILDING.txt` for detail. Since my codebase is built on `Hadoop-2.7.3`, it depends on libprotoc-2.5.0(higher version may report error).
+For building this project, plesse refer `BUILDING.txt` for detail. Since my codebase is built on `Hadoop-2.7.3`, it depends on libprotoc-2.5.0(higher version may report error).
 
 ## Docker image
 Please use /sequenceiq/hadoop-docker as the docker image for running task. We have tested `/sequenceiq/hadoop-docker:2.4.0`, and it can
