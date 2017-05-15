@@ -69,4 +69,5 @@ resolved in future Hadoop Release(e.g., Hadoop-2.8.0/Hadoop3.0.0) For Spark:
 spark.yarn.am.nodeLabelExpression          flex 
 ````
 
+This project is still under active development, if you have any questions, feel free to contact ynjassionchen@gmail.com
 
