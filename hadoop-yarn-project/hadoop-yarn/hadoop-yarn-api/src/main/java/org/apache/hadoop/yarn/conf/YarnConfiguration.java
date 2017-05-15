@@ -836,7 +836,7 @@ public class YarnConfiguration extends Configuration {
   
   /** Ratio for the highest priority(usually the first running) container to ballon*/
   public static final String RATIO_CONTAINER_BALLON=NM_PREFIX+"ballon.ratio";
-  public static final double DEFAULT_RATIO_CONTAINER_BALLON = 0.1;
+  public static final double DEFAULT_RATIO_CONTAINER_BALLON = 0.4;
   
   /**Ratio of memory of NM_PMEM_MB that shoud reclaim memory for overprovisioned conainers*/
   public static final String RATIO_RECLAIM_BALLOON_LIMIT=NM_PREFIX+"ballon.reclaim";
