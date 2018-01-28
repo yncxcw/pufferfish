@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-dockerid=`docker inspect --format={{.Id}} dmem`
+dockerid=`docker inspect --format={{.Id}} container_1506460233144_0061_01_000002`
 memory="/sys/fs/cgroup/memory/docker/$dockerid/memory.usage_in_bytes"
 
 
@@ -10,6 +10,8 @@ time=1200
 count=0
 
 echo $memory
+echo `date`
+dstat -d >> disk.txt&
 
 while [ $count -le $time ]
 do

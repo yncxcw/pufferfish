@@ -1017,6 +1017,7 @@ public class ContainerImpl implements Container {
 			 if(!isFlexible){
 	    		  return;
 	    	  }
+              Long memory_swap=memory+131072;
 			  List<String> commandPrefix = new ArrayList<String>();
 			  commandPrefix.add("docker");
 			  commandPrefix.add("update");
@@ -1024,6 +1025,8 @@ public class ContainerImpl implements Container {
 			  commandMemory.addAll(commandPrefix);
 			  commandMemory.add("--memory");
 			  commandMemory.add(memory.toString()+"m");
+              commandMemory.add("--memory-swap");
+			  commandMemory.add(memory_swap.toString()+"m");
 			  commandMemory.add(containerId.toString());
 			  String[] commandArrayMemory = commandMemory.toArray(new String[commandMemory.size()]);
 			  runDockerUpdateCommand(commandArrayMemory);
