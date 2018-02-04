@@ -310,7 +310,7 @@ public class NodeMemoryManager {
 		 //earliest balloon first
 		 
 		  
-		//int swappingSize=0;
+		int swappingSize=swappingContainer.size();
 		for(Set<Container> cnts: swappingContainer){
 		  //ballooning containers belonging to same app
 		  for(Container cnt : cnts){
@@ -319,22 +319,20 @@ public class NodeMemoryManager {
 		      //swappingSize++;
 			  //cnt may be in the swapping windows but not swapping yet
 			  if(cnt.getContainerMonitor().getIsOutofMemory()){
+				   if(nodeTotal*STOP_BALLOON_LIMIT-nodeCurrentAssigned <= 0)
+					   break;
+				   
 			       int oldMemory     = (int) cnt.getContainerMonitor().getCurrentLimitedMemory();
-			       int newMemory     = (int) (oldMemory*balloonRatio);
-				   int available     = (int) (nodeTotal*STOP_BALLOON_LIMIT-nodeCurrentAssigned);
+			       int available     = (int) (nodeTotal*STOP_BALLOON_LIMIT-nodeCurrentAssigned);
+			       int newMemory     = (int) Math.min((int)(oldMemory*balloonRatio),(int)available/2);
+				  
 				   //to avoid unnecessary balloon
-				   if(newMemory < 500 && balloonRatio < 0.01){
+				   if(newMemory < 1000 && balloonRatio < 0.01){
 					   LOG.info("give up ballooning: "+cnt.getContainerId());
 					   continue;
 				   }
-				   if(available <=0){
-					   LOG.info("balloon error: "+ available);
-					   return null;
-				   }
-				   if(newMemory >= available){
-					   newMemory = available;
-					   LOG.info("available: "+ available + " newMemory: "+newMemory+" Limit: "+nodeTotal*STOP_BALLOON_LIMIT);
-				   }
+				 
+				
 			       long newCntMemory = oldMemory+newMemory;
 
 			        //LOG.info("### container "+cnt.getContainerId()+" ratio "+balloonRatio+" from "+oldMemory+" to "+newCntMemory+" ###");
@@ -344,7 +342,7 @@ public class NodeMemoryManager {
 			  }
 		        
 		  }
-		  balloonRatio/=8;
+		  balloonRatio/=swappingSize;
 		  
 		}
 		
