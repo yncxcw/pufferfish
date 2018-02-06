@@ -768,13 +768,16 @@ public class ContainerImpl implements Container {
 			isRunning = true;
 			//int count = 3;
 			//int index = 0;
+			
+			try{
+				
 			while(stateMachine.getCurrentState() == ContainerState.RUNNING && isRunning){
 				//update necessary metrics
 				updateCgroupValues();
 				ContainerMemoryEvent event = getContainerMemoryEvent();
 				//ContainerMemoryState nextState;
 				//if(isFlexible)
-			    //  LOG.info("$$$  "+this.name+" "+memoryState);
+			    LOG.info("$$$  "+this.name+" "+memoryState);
 				//else
 			    //  LOG.info("$$$  "+this.name+" "+this.currentUsedMemory+" "+this.currentUsedSwap+" "+this.limitedMemory+"  $$$");
 				//printCPUQuota();
@@ -835,7 +838,8 @@ public class ContainerImpl implements Container {
 					     }
 					     else if(getIsSwapping()){
 					    	resumeCpuQuota();
-					    	memoryState=ContainerMemoryState.RECOVERYING;
+					    	 resumeCpus();
+					    	memoryState=ContainerMemoryState.RUNNING;
 					    	continue;
 					     }
 					   
@@ -882,6 +886,10 @@ public class ContainerImpl implements Container {
 				 }
 				 
 			}
+			
+			}catch(Exception e){
+			  LOG.info("Exception in monitor: " + e.getMessage() + "   "+this.name);    	
+			}
 			isRunning = false;
 			memoryState = ContainerMemoryState.FINISH;
 			LOG.info(this.name+"final current state: "
@@ -891,7 +899,7 @@ public class ContainerImpl implements Container {
 		
 		//private void 
 	
-		private void updateCgroupValues(){
+		public void updateCgroupValues(){
 			
 			getCurrentLimitedMemory();
 			//get current used memory
@@ -900,15 +908,15 @@ public class ContainerImpl implements Container {
 			getCurrentUsedSwap();
 		}
 		
-		private void suspendCpuQuota(){
+		public void suspendCpuQuota(){
 			DockerCommandCpuQuota(1000);
 		}
 		
-		private void resumeCpuQuota(){
+		public void resumeCpuQuota(){
 			DockerCommandCpuQuota(-1);
 		}
 		
-		private void suspendCpus(){
+		public void suspendCpus(){
 			
 		   DockerCommandCpuQuota(1000);
 		   Set<Integer> cpus=new HashSet<Integer>();
@@ -917,15 +925,13 @@ public class ContainerImpl implements Container {
 			
 		}
 		
-		private void resumeCpus(){
+		public void resumeCpus(){
 			DockerCommandCpuQuota(-1);
 			Set<Integer> cpus=new HashSet<Integer>();
 			for(int i=0;i<virtualCores;i++){
 				cpus.add(i);
 			}
-			DockerCommandCpuMap(cpus);	
-			
-			
+			DockerCommandCpuMap(cpus);		
 		}
 		
 		
@@ -1287,8 +1293,6 @@ public class ContainerImpl implements Container {
 				}
 				continue;
 		     }
-		     
-		      
 		        break; 
 			 }
 			
@@ -1297,6 +1301,7 @@ public class ContainerImpl implements Container {
 			
 		}
 		private String runDockerUpdateCommand(String[] command){
+			
 			//do nothing, if this container is not flexible 
 			 String commandString=new String();
 			 for(String c : command){
@@ -1306,15 +1311,15 @@ public class ContainerImpl implements Container {
 			
 			 ShellCommandExecutor shExec = null; 
 			 int count = 1;
+			
 			 while(count < 100){
 				
              if(!(stateMachine.getCurrentState() == ContainerState.RUNNING || stateMachine.getCurrentState() == ContainerState.KILLING)){
-                
                  break;
               } 
              boolean error=false;
              //add lock before execution
-             context.getNodeMemoryManager().getDockerLock().lock();;
+             context.getNodeMemoryManager().getDockerLock().lock();
              LOG.info("run docker commands: "+commandString);
 			 //we try 10 times if fails due to device busy 
 		     try { 
@@ -1352,13 +1357,14 @@ public class ContainerImpl implements Container {
 				}
 				continue;
 		     }
-		     
-		      
 		        break; 
 			 }
-			
-			
-			 return shExec.getOutput().trim();
+			  
+			 if(shExec!= null && shExec.getOutput() != null){
+				 return shExec.getOutput().trim();
+			 }else{
+				 return null;
+			 }
 		   }
 		
 		private List<String> readFileLines(String path){
@@ -1367,6 +1373,8 @@ public class ContainerImpl implements Container {
 		    BufferedReader reader = null;
 		    boolean isError=false;
 		    //LOG.info("try to read"+path);
+		    //add lock before execution
+            context.getNodeMemoryManager().getDockerLock().lock();
 		    try {
 		        reader = new BufferedReader(new FileReader(file));
 		        String tempString = null;
@@ -1378,13 +1386,6 @@ public class ContainerImpl implements Container {
 		            reader.close();
 		        } catch (IOException e) {
 		        	LOG.info("file error: "+e.toString());
-		        	//if we come to here, then means read file causes errors;
-		        	//if reports this errors mission errors, it means this containers
-		        	//has terminated, but nodemanger did not delete it yet. we stop monitoring
-		        	//here
-		        	if(e.toString().contains("FileNotFoundException")){
-		        	  isRunning=false;	
-		        	}
 		        	isError=true;
 		        } finally {
 		            if (reader != null) {
@@ -1393,6 +1394,8 @@ public class ContainerImpl implements Container {
 		                } catch (IOException e1) {
 		                }
 		            }
+		            
+		            context.getNodeMemoryManager().getDockerLock().unlock();
 		        }
 		    
 			if(!isError){

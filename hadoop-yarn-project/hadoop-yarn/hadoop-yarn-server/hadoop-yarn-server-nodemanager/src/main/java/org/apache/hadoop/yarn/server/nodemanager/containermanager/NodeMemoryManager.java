@@ -99,7 +99,7 @@ public class NodeMemoryManager {
 				                                       YarnConfiguration.DEFAULT_RATIO__RECLAIM_BALLOON_LIMIT);
 		 
 		 //keep for 2 minute
-		 this.SWAP_KEEP_TIME          = 60;
+		 this.SWAP_KEEP_TIME          = 30;
 		 ReadWriteLock readWriteLock  = new ReentrantReadWriteLock();
 		 this.readLock    = readWriteLock.readLock();
 		 this.writeLock   = readWriteLock.writeLock();
@@ -176,7 +176,7 @@ public class NodeMemoryManager {
 						 LOG.info(containerId+" is removed");
 						 container.getContainerMonitor().setBallooningWindow(false);
 					 }else{
-						 LOG.info("currentWait: "+containerId+"time: "+currentWaitTime);
+						 //LOG.info("currentWait: "+containerId+"time: "+currentWaitTime);
 					 }
 				 } 
 			 }
@@ -240,7 +240,7 @@ public class NodeMemoryManager {
 		 double assignage= nodeCurrentAssigned*1.0/nodeTotal*1.0;
 		 //LOG.info("current used:  "+nodeCurrentUsed);
 		 //LOG.info("current assign:"+nodeCurrentAssigned);
-		 LOG.info("balloon assignage:  "+assignage+"  usage: "+usage+" RECLAIM LIMIT: "+RECLAIM_BALLOON_LIMIT+" STOP LIMIT: "+STOP_BALLOON_LIMIT);
+		 //LOG.info("balloon assignage:  "+assignage+"  usage: "+usage+" RECLAIM LIMIT: "+RECLAIM_BALLOON_LIMIT+" STOP LIMIT: "+STOP_BALLOON_LIMIT);
 		 if(assignage >= RECLAIM_BALLOON_LIMIT-0.001){
 			
 			 int memoryClaimed=(int)((assignage-RECLAIM_BALLOON_LIMIT)*nodeTotal);
@@ -315,7 +315,7 @@ public class NodeMemoryManager {
 		  //ballooning containers belonging to same app
 		  for(Container cnt : cnts){
 			  //compute new memory after balloon
-			  //LOG.info("cached swapping container: "+cnt.getContainerId()+"  ratio:"+balloonRatio);
+			  LOG.info("cached swapping container: "+cnt.getContainerId()+"  ratio:"+balloonRatio);
 		      //swappingSize++;
 			  //cnt may be in the swapping windows but not swapping yet
 			  if(cnt.getContainerMonitor().getIsOutofMemory()){
@@ -376,6 +376,8 @@ public class NodeMemoryManager {
 		for(Container container : containers.values()){
 			if(container.isFlexble()){
 				LOG.info("OOM kill: "+container.getContainerId());
+				container.getContainerMonitor().resumeCpuQuota();
+				container.getContainerMonitor().resumeCpus();
 				return container.getContainerId();
 			}
 		}
