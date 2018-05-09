@@ -44,7 +44,7 @@ There are 4 parameters needed to be configured by users, all in yarn-site.xml.
 </property>
 
 ````
-2. Stop ballooing limit(SB).
+2. Stop inflating limit (avoid node thrashing).
 ````
 <property>
     <name>yarn.nodemanager.balloon.stop</name>
