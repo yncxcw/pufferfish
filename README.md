@@ -48,7 +48,7 @@ There are 4 parameters needed to be configured by users, all in yarn-site.xml.
 ````
 <property>
     <name>yarn.nodemanager.balloon.stop</name>
-    <value>0.8</value>
+    <value>0.9</value>
 </property>
 ````
 3. JVM heap size for Flex containers (`MAX_HEAP`).
