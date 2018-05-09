@@ -34,9 +34,9 @@ in yarn-site.xml
 </property>
 ````
 
-## MBalloon Configuration
+## mElas Configuration
 There are 4 parameters needed to be configured by users, all in yarn-site.xml.
-1. Balloon ratio.
+1. Inflating ratio.
 ```
 <property>
     <name>yarn.nodemanager.balloon.ratio</name>
