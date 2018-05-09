@@ -1,10 +1,10 @@
-# MBalloonYARN
+# mElas
 
 In this project, we enhance Hadoop-YARN with a dynamic and adaptive memory management module. Its mainly functions include:
 
 (1) Alleviate OutOfMemory errors for JVM based framework(e.g., Spark and Hadoop).
 
-(2) Adaptive sizing memory allocation to its realtime needs for each task container to improve cluster utilization.
+(2) Adaptive sizing memory allocation to its in-time needs for each task container to improve cluster utilization (So it is called elastic).
 
 For more information, please refer our paper (Currently under submission).
 
@@ -51,7 +51,7 @@ There are 4 parameters needed to be configured by users, all in yarn-site.xml.
     <value>0.8</value>
 </property>
 ````
-3. JVM heap size for Flex containers.
+3. JVM heap size for Flex containers (MAX_HEAP).
 ````
 <property>
     <name>yarn.nodemanager.balloon.jvm-mb</name>
@@ -59,7 +59,7 @@ There are 4 parameters needed to be configured by users, all in yarn-site.xml.
 </property>
 ````
 
-4. Flex contaienr size. It should be configured at job submission; for MapReduce applications, by setting 
+4. Flex contaienr size (MIN_CONT). It should be configured at job submission; for MapReduce applications, by setting 
 `mapreduce.map.memory.mb` and `mapreduce.reduce.memory.mb`; For Spark applications, by setting `spark.executor.memory`. 
 
 5. Flex containers type for applications should be set at job submission. We achieve this by utilizing node label expression. 

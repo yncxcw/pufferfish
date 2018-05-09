@@ -99,7 +99,7 @@ public class NodeMemoryManager {
 				                                       YarnConfiguration.DEFAULT_RATIO__RECLAIM_BALLOON_LIMIT);
 		 
 		 //keep for 2 minute
-		 this.SWAP_KEEP_TIME          = 30;
+		 this.SWAP_KEEP_TIME          = 5;
 		 ReadWriteLock readWriteLock  = new ReentrantReadWriteLock();
 		 this.readLock    = readWriteLock.readLock();
 		 this.writeLock   = readWriteLock.writeLock();
@@ -295,7 +295,7 @@ public class NodeMemoryManager {
 			 
 			 lastKilled = shouldKill;
 			 
-			 if(killRetries > 10){
+			 if(killRetries > SWAP_KEEP_TIME * 2){
 			   LOG.info("memory conflicts kill");	 
 			   this.killRetries = 0;
 			   return this.killContainer();
