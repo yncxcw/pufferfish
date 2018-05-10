@@ -1,4 +1,4 @@
-# mElas
+# mBalloon
 
 In this project, we enhance Hadoop-YARN with a dynamic and adaptive memory management module. Its mainly functions include:
 
@@ -34,7 +34,7 @@ in yarn-site.xml
 </property>
 ````
 
-## mElas Configuration
+## mBalloon Configuration
 There are 4 parameters needed to be configured by users, all in yarn-site.xml.
 1. Inflating ratio.
 ```
